@@ -53,7 +53,7 @@ YYSTYPE yylval;
 \^=                                     { MULTI_OP(XOREQ); }
 
 AUTO                                    { MULTI_OP(AUTO); }
-BREAK                                   { MULTI_OP(BREAK); }                             
+BREAK                                   { MULTI_OP(BREAK); }
 CASE                                    { MULTI_OP(CASE); }
 CHAR                                    { MULTI_OP(CHAR); }
 CONST                                   { MULTI_OP(CONST); }
@@ -131,7 +131,6 @@ _IMAGINARY                              { MULTI_OP(_IMAGINARY); }
                                                     dec_val += (yytext[i] - 'a' + 10) * pow(16, num_len - i - 1);
                                                 }
                                             }
-                                            //printf("dec_val: %d\n", dec_val);
                                             ssize_t octal_rep[3]; // will be at most 3 octal bits wide (377 max)
 
                                             int i = 0;
@@ -148,14 +147,26 @@ _IMAGINARY                              { MULTI_OP(_IMAGINARY); }
                                             str_size += strlen(yytext);
                                             str = realloc(str, str_size + 1);
                                             strcat(str, yytext);
-
-                                            if (str_size == 1) {
-                                                printf("\00%s", yytext);
-                                            }
                                             if (str_size == 2) {
-                                                printf("\0%s", yytext);
+                                                printf("\\00%d\n", 
+                                                        yytext[1] - '0');
                                             }
-                                            printf("%s", yytext);
+                                            if (str_size == 3) {
+                                                int num1 = yytext[1] - '0';
+                                                int num2 = yytext[2] - '0';
+                                                printf("\\0%d%d\n",
+                                                        yytext[1] - '0',
+                                                        yytext[2] - '0');
+                                            }
+                                            if (str_size == 4) {
+                                                int num1 = yytext[1] - '0';
+                                                int num2 = yytext[2] - '0';
+                                                int num3 = yytext[3] - '0';
+                                                printf("\\%d%d%d\n", 
+                                                        yytext[1] - '0',
+                                                        yytext[2] - '0',
+                                                        yytext[3] - '0');
+                                            }
                                         }
 <STRING>\"$                             { printf("leaving string: %s\n", str); BEGIN(0); }
 
