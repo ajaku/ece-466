@@ -146,12 +146,24 @@ typedef union {
 
 extern YYSTYPE yylval;
 
-#define OP(yytext) \
-                printf("%s\t%d\t%s\n", filename, lc, yytext); \
-                yylval.string_literal = strdup(yytext); \
-                return (int)(*yytext);
+#define OP(YYTEXT) \
+                printf("%s\t%d\t%s\n", filename, lc, YYTEXT); \
+                yylval.string_literal = strdup(YYTEXT); \
+                return (int)(*YYTEXT);
 
 #define MULTI_OP(OP) \
                 printf("%s\t%d\t%s\n", filename, lc, token_strings[STRING_TOK_IDX(OP)]); \
                 yylval.string_literal = strdup(yytext); \
                 return OP;
+
+
+int append_str(ssize_t *size, char **a, char **b) {
+    *size += strlen(*b);
+    *a = realloc(*a, *size + 1);
+    if (a == NULL) {
+        fprintf(stderr, "Failed to allocate memory within realloc\n");
+        exit(1);
+    }
+    strcat(*a, *b);
+    return 0;
+}
