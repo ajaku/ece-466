@@ -98,3 +98,38 @@ char lex_handle_esc(const char *s) {
             return *s;
     }
 }
+
+void lex_handle_nums(const char *yytext, YYSTYPE *yylval, const char *filename, int line_ct) {
+    char *endptr;
+    unsigned long long num = strtoull(yytext, &endptr, 0);
+
+    if (*endptr == '\0') {
+        yylval->int_type = (int)val;
+        printf("%s\t%d\tNUMBER\tINTEGER\t%d\tINT\n", filename, line_ct, yylval->int_type); 
+        return;
+    }
+
+    if (strcmp(endptr, "U")) {
+        yylval->uint_type = (unsigned int)val;
+        printf("%s\t%d\tNUMBER\tINTEGER\t%u\tUNSIGNED\n", filename, line_ct, yylval->uint_type); 
+        return;
+    }
+
+    if (strcmp(endptr, "L")) {
+        yylval->long_type = (long))val;
+        printf("%s\t%d\tNUMBER\tINTEGER\t%ld\tLONG\n", filename, line_ct, yylval->uint_type); 
+        return;
+    }
+
+    if (strcmp(endptr, "UL") || strcmp(endptr, "LU")) {
+        yylval->ulong_type = (unsigned long))val;
+        printf("%s\t%d\tNUMBER\tINTEGER\t%lu\tUNSIGNED, LONG\n", filename, line_ct, yylval->ulong_type); 
+        return;
+    }
+
+    if (strcmp(endptr, "ULL") || strcmp(endptr, "LUL") || strcmp(endptr, "LLU")) {
+        yylval->ulonglong_type = val;
+        printf("%s\t%d\tNUMBER\tINTEGER\t%ld\tUNSIGNED, LONGLONG\n", filename, line_ct, yylval->ulonglong_type); 
+        return;
+    }
+}

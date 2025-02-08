@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "lex.h"
 
 int line_ct;
@@ -90,10 +91,70 @@ _COMPLEX                                { LEX_MULTI_TOK(_COMPLEX); }
 _IMAGINARY                              { LEX_MULTI_TOK(_IMAGINARY); }
 
 [0-9]+                                  { 
-                                            printf("%s %d\tNUMBER\t%s\tINTEGER\n", filename, line_ct, yytext); 
+                                            yylval.int_type = atoi(yytext);
+                                            printf("%s %d\tNUMBER\tINTEGER\t%d\tINT\n", filename, line_ct, yylval.int_type); 
+                                            return NUMBER;
+                                        }
+[0-9]+U$                                { 
+                                            yylval.uint_type = (unsigned int) atol(yytext);
+                                            lex_handle_nums(yytext, &yylval, filename, line_ct);
+                                            printf("%s %d\tNUMBER\tINTEGER\t%u\tLONG\n", filename, line_ct, yylval.uint_type); 
+                                            return NUMBER;
                                         }
 [0-9]+L$                                { 
-                                            printf("%s %d\tNUMBER\t%s\n\tLONG", filename, line_ct, yytext); 
+                                            yylval.long_type = atol(yytext);
+                                            printf("%s %d\tNUMBER\tINTEGER\t%ld\tLONG\n", filename, line_ct, yylval.long_type); 
+                                            return NUMBER;
+                                        }
+[0-9]+(UL|LU)$                          { 
+                                            yylval.ulong_type = strtoul(yytext, NULL, 10);
+                                            lex_handle_nums(yytext, &yylval, filename, line_ct);
+                                            printf("%s %d\tNUMBER\tINTEGER\t%lu\tUNSIGNED, LONG\n", filename, line_ct, yylval.ulong_type); 
+                                            return NUMBER;
+                                        }
+[0-9]+(LLU|ULL|LUL)$                    { 
+                                            yylval.ulonglong_type = strtoull(yytext, NULL, 10);
+                                            printf("%s %d\tNUMBER\tINTEGER\t%llu\tUNSIGNED, LONGLONG\n", filename, line_ct, yylval.ulonglong_type); 
+                                            return NUMBER;
+                                        }
+0[xX][0-9a-fA-F]+                       { 
+                                            sscanf(yytext, "%x", &yylval.int_type);
+                                            printf("%s %d\tNUMBER\tINTEGER\t%d\n", filename, line_ct, yylval.int_type); 
+                                            return NUMBER;
+                                        }
+0[xX][0-9a-fA-F]+(L)$                   { 
+                                            yytext[strlen(yytext) - 1] = '\0';
+                                            sscanf(yytext, "%lx", &yylval.long_type);
+                                            printf("%s %d\tNUMBER\tINTEGER\t%ld\tLONG\n", filename, line_ct, yylval.long_type); 
+                                            return NUMBER;
+                                        }
+0[xX][0-9a-fA-F]+(U)$                   { 
+                                            yytext[strlen(yytext) - 1] = '\0';
+                                            sscanf(yytext, "%x", &yylval.uint_type);
+                                            printf("%s %d\tNUMBER\tINTEGER\t%u\tUNSIGNED\n", filename, line_ct, yylval.uint_type); 
+                                            return NUMBER;
+                                        }
+0[xX][0-9a-fA-F]+(UL|LU)$                   { 
+                                            yytext[strlen(yytext) - 2] = '\0';
+                                            sscanf(yytext, "%lx", &yylval.ulong_type);
+                                            printf("%s %d\tNUMBER\tINTEGER\t%lu\tUNSIGNED, LONG\n", filename, line_ct, yylval.ulong_type); 
+                                            return NUMBER;
+                                        }
+0[xX][0-9a-fA-F]+(ULL|LUL|LLU)$         { 
+                                            yytext[strlen(yytext) - 3] = '\0';
+                                            sscanf(yytext, "%llx", &yylval.ulonglong_type);
+                                            printf("%s %d\tNUMBER\tINTEGER\t%llu\tUNSIGNED, LONGLONG\n", filename, line_ct, yylval.ulonglong_type); 
+                                            return NUMBER;
+                                        }
+([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)         {
+                                            yylval.double_type = strtod(yytext, NULL);
+                                            printf("%s %d\tNUMBER\tREAL\t%s\tDOUBLE\n", filename, line_ct, yytext); 
+                                            return NUMBER;
+                                        }
+([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)(L)$     {
+                                            yylval.ldouble_type = strtold(yytext, NULL);
+                                            printf("%s %d\tNUMBER\tREAL\t%s\tDOUBLE, LONG\n", filename, line_ct, yytext); 
+                                            return NUMBER;
                                         }
 
 ^(L\')|(\')                             { BEGIN(CHARLIT); }
@@ -146,15 +207,13 @@ _IMAGINARY                              { LEX_MULTI_TOK(_IMAGINARY); }
                                                 printf("%c", dec_rep);
                                             } else {
                                                 // Hex is getting stored in a char, which is max 1 byte (8 bits => 377 octal => 255 dec)
-                                                if (dec_rep > MAX_CHAR_BYTE_SIZE)
+                                                if (dec_rep > UCHAR_MAX)
                                                 {
-                                                    dec_rep = MAX_CHAR_BYTE_SIZE;
+                                                    dec_rep = UCHAR_MAX;
                                                     fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
                                                 }
                                                 printf("\\%03o", dec_rep);
                                             }
-
-
                                         }
 <STRING>\\[0-7]{1,3}                    { 
                                             lex_append_str(&str_size, &str, &yytext);

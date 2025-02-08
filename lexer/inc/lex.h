@@ -7,14 +7,23 @@
 #define MAX_READABLE_ASCII 127
 #define MIN_READABLE_ASCII 32
 
-#define MAX_CHAR_BYTE_SIZE 255
-
 #define STRING_TOK_IDX(IDX) (IDX - 256)
 
 typedef union {
     char *string_literal;
     char char_literal;
-    int integer;
+
+    /* Integer Numbers */
+    int int_type;
+    unsigned int uint_type;
+    long long_type;
+    unsigned long ulong_type;
+    unsigned long long ulonglong_type;
+
+    /* Real Numbers */
+    float float_type;
+    double double_type;
+    long double ldouble_type;
 } YYSTYPE;
 
 extern YYSTYPE yylval;
@@ -34,3 +43,5 @@ extern const char *string_tokens[];
 int lex_append_str(size_t *size, char **a, char **b);
 
 char lex_handle_esc(const char *s);
+
+void lex_handle_nums(const char *yytext, YYSTYPE *yylval, const char *filename, int line_ct);
