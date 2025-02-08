@@ -141,6 +141,7 @@ const char* token_strings[] = {
 };
 typedef union {
     char *string_literal;
+    char character;
     int integer;
 } YYSTYPE;
 

@@ -25,7 +25,7 @@ YYSTYPE yylval;
                                                 filename = strdup(yytext);
                                             }
                                         }
-<PREPROC>\"$                            { BEGIN(0); }
+<PREPROC>\"$                            { BEGIN(INITIAL); }
 
 [\n]                                    { lc++; }
 
@@ -104,29 +104,49 @@ _IMAGINARY                              { MULTI_OP(_IMAGINARY); }
 ^(L\')|(\')                             { BEGIN(CHARLIT); }
 <CHARLIT>\\[0abfnrtv\'\"\\]'            { 
                                             printf("%s %d\tCHARLIT\t%.2s\n", filename, lc, yytext); 
-                                            BEGIN(0);
+                                            char *character = strdup(yytext);
+                                            yylval.string_literal = (char *)malloc(sizeof(char *));
+                                            for (int i = 0; i < 2; i++) {
+                                                yylval.string_literal[i] = character[i];
+                                            }
+                                            printf("%s\n", yylval.string_literal);
+                                            BEGIN(INITIAL);
                                             return CHARLIT;
                                         }
 <CHARLIT>[^\\n]'                        { 
                                             printf("%s %d\tCHARLIT\t%.1s\n", filename, lc, yytext); 
-                                            BEGIN(0);
+                                            char *character = strdup(yytext);
+                                            yylval.string_literal = (char *)malloc(sizeof(char));
+                                            yylval.string_literal[0] = character[0];
+                                            printf("%s\n", yylval.string_literal);
+                                            BEGIN(INITIAL);
                                             return CHARLIT;
                                         }
 <CHARLIT>[^\\n][^']+                    { 
                                             printf("%s %d\tCHARLIT\t%.1s\n", filename, lc, yytext);
+                                            char *character = strdup(yytext);
+                                            yylval.string_literal = (char *)malloc(sizeof(char *));
+                                            for (int i = 0; i < 2; i++) {
+                                                yylval.string_literal[i] = character[i];
+                                            }
                                             fprintf(stdout, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, lc);
                                             BEGIN(MULTIBYTE);
                                         }
 <CHARLIT>\\[0abfnrtv\'\"\\][^']+        { 
                                             printf("%s %d\tCHARLIT\t%.2s\n", filename, lc, yytext);
+                                            char *character = strdup(yytext);
+                                            yylval.string_literal = (char *)malloc(sizeof(char *));
+                                            for (int i = 0; i < 2; i++) {
+                                                yylval.string_literal[i] = character[i];
+                                            }
                                             fprintf(stdout, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, lc);
                                             BEGIN(MULTIBYTE);
                                         }
-<MULTIBYTE>'$                           { BEGIN(0); return CHARLIT; } 
+<MULTIBYTE>'$                           { BEGIN(INITIAL); return CHARLIT; } 
 
 ^(L\")|(\")                             { BEGIN(STRING);
                                             str_size = 0;
-                                            str = (char *)malloc(sizeof(char));
+                                            str = (char *)malloc(sizeof(char *));
                                             printf("%s\t%d\tSTRING\t", filename, lc);
                                         }
 <STRING>.                               { 
@@ -135,67 +155,40 @@ _IMAGINARY                              { MULTI_OP(_IMAGINARY); }
                                         }
 <STRING>\\[xX][0-9a-fA-F]+              { 
                                             append_str(&str_size, &str, &yytext);
-                                            /*
-                                            int hex_value;
-                                            sscanf(yytext + 2, "%2x", &hex_value);  // Skip "\x" and read hex
-                                            printf("hex_value: %d\n", hex_value);
-                                            printf("Octal: %03o\n",(unsigned char) hex_value);
-                                            printf("YYTEXT: %s\n", yytext);
-                                            printf("%03o\n", (unsigned char) *yytext);
-                                            */
+                                            unsigned int dec_rep;
+                                            sscanf(yytext + 2, "%x", &dec_rep);
 
-                                            // I think there's definitely a bug with the string I'm saving here, but out of time to fix it
-                                            ssize_t dec_val = 0;
-                                            ssize_t num_len = strlen(yytext);
-                                            for (int i = num_len - 1; i >= 2; i--) {
-                                                if (yytext[i] >= '0' && yytext[i] <= '9') {
-                                                    dec_val += (yytext[i] - '0') * pow(16, num_len - i - 1); 
-                                                }
-                                                if (yytext[i] >= 'A' && yytext[i] <= 'F') {
-                                                    dec_val += (yytext[i] - 'A' + 10) * pow(16, num_len - i - 1);
-                                                }
-                                                if (yytext[i] >= 'a' && yytext[i] <= 'f') {
-                                                    dec_val += (yytext[i] - 'a' + 10) * pow(16, num_len - i - 1);
-                                                }
-                                            }
-                                            ssize_t octal_rep[3]; // will be at most 3 octal bits wide (377 max)
 
-                                            if (dec_val > 255) {
-                                                dec_val = 255;
-
-                                                fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, lc, yytext);
-                                            }
-
-                                            if (dec_val < 127 && dec_val > 32) {
-                                                printf("%c", (char)(dec_val));
+                                            if (dec_rep < 127 && dec_rep  > 32) {
+                                                printf("%c", dec_rep);
                                             } else {
-                                                // Convert decmial to hex
-                                                int i = 0;
-                                                while(dec_val != 0) {
-                                                    octal_rep[i] = dec_val % 8;
-                                                    dec_val = dec_val / 8;
-                                                    i++;
+                                                // Hex is getting stored in a char, which is max 1 byte (8 bits => 377 octal => 255 dec)
+                                                if (dec_rep > 255)
+                                                {
+                                                    dec_rep = 255;
+                                                    fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, lc, yytext);
                                                 }
-                                                printf("\\%ld", octal_rep[2]);
-                                                printf("%ld", octal_rep[1]);
-                                                printf("%ld", octal_rep[0]);
+                                                printf("\\%03o", dec_rep);
                                             }
+
+
                                         }
 <STRING>\\[0-7]{1,3}                    { 
                                             append_str(&str_size, &str, &yytext);
-                                            if (str_size == 2 && yytext[1] == '0') {
+                                            int yytext_size = strlen(yytext);
+                                            if (yytext_size == 2 && yytext[1] == '0') {
                                                 printf("\\0"); 
                                             }
-                                            else if (str_size == 2) {
+                                            else if (yytext_size == 2) {
                                                 printf("\\00%d", 
                                                         yytext[1] - '0');
                                             }
-                                            else if (str_size == 3) {
-                                                printf("\\0%d%d\n",
+                                            else if (yytext_size == 3) {
+                                                printf("\\0%d%d",
                                                         yytext[1] - '0',
                                                         yytext[2] - '0');
                                             }
-                                            else if (str_size == 4) {
+                                            else if (yytext_size == 4) {
                                                 printf("\\%d%d%d", 
                                                         yytext[1] - '0',
                                                         yytext[2] - '0',
@@ -209,7 +202,7 @@ _IMAGINARY                              { MULTI_OP(_IMAGINARY); }
 <STRING>\"$                             { 
                                             yylval.string_literal = str;
                                             printf("\n");
-                                            BEGIN(0);
+                                            BEGIN(INITIAL);
                                             return STRING;
                                         }
 
