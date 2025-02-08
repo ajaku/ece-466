@@ -69,7 +69,7 @@ const char *string_tokens[] = {
 	"_IMAGINARY"      // _imaginary
 };
 
-int lex_append_str(ssize_t *size, char **a, char **b) {
+int lex_append_str(size_t *size, char **a, char **b) {
     *size += strlen(*b);
     *a = realloc(*a, *size + 1);
     if (a == NULL) {

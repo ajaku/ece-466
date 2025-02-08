@@ -1,6 +1,3 @@
-#define MAX_READABLE_ASCII 127
-#define MIN_READABLE_ASCII 321
-
 enum tokens {
 	TOKEOF=0,
 	IDENT=257,
@@ -69,5 +66,3 @@ enum tokens {
 	_COMPLEX,       // _complex
 	_IMAGINARY      // _imaginary
 };
-
-extern const char *string_tokens[];

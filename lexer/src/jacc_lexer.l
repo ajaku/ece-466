@@ -5,29 +5,24 @@
 #include <stdlib.h>
 #include "lex.h"
 
-int lc;
+int line_ct;
 char *filename = NULL;
 char *str = NULL;
-ssize_t str_size = 0;
+size_t str_size = 0;
 YYSTYPE yylval;
 
 %}
 
 %x PREPROC
 %x CHARLIT
-%x MULTIBYTE
 %x STRING
 
 %%
 #[" "]+[0]+[" "]\"                      { BEGIN(PREPROC); }
-<PREPROC>([^\"\n]+)                     {
-                                            if (filename == NULL) {
-                                                filename = strdup(yytext);
-                                            }
-                                        }
+<PREPROC>([^\"\n]+)                     { if (filename == NULL) { filename = strdup(yytext); } }
 <PREPROC>\"$                            { BEGIN(INITIAL); }
 
-[\n]                                    { lc++; }
+[\n]                                    { line_ct++; }
 
 !|%|^|&|\*|-|\+|=|~|\||\.|<|>|\/|\?|;   { LEX_SINGLE_TOK(yytext); }
 \[|\]                                   { LEX_SINGLE_TOK(yytext); }
@@ -95,51 +90,47 @@ _COMPLEX                                { LEX_MULTI_TOK(_COMPLEX); }
 _IMAGINARY                              { LEX_MULTI_TOK(_IMAGINARY); }
 
 [0-9]+                                  { 
-                                            printf("%s %d\tNUMBER\t%s\tINTEGER\n", filename, lc, yytext); 
+                                            printf("%s %d\tNUMBER\t%s\tINTEGER\n", filename, line_ct, yytext); 
                                         }
 [0-9]+L$                                { 
-                                            printf("%s %d\tNUMBER\t%s\n\tLONG", filename, lc, yytext); 
+                                            printf("%s %d\tNUMBER\t%s\n\tLONG", filename, line_ct, yytext); 
                                         }
 
 ^(L\')|(\')                             { BEGIN(CHARLIT); }
 <CHARLIT>\\[0abfnrtv\'\"\\]'            { 
                                             yylval.char_literal = lex_handle_esc(yytext + 1);
-                                            printf("%s %d\tCHARLIT\t%.2s\n", filename, lc, yytext); 
+                                            printf("%s %d\tCHARLIT\t%.2s\n", filename, line_ct, yytext); 
                                             BEGIN(INITIAL);
                                             return CHARLIT;
                                         }
 <CHARLIT>[^\\n]'                        { 
                                             yylval.char_literal = yytext[0];
-                                            printf("%s %d\tCHARLIT\t%c\n", filename, lc, yylval.char_literal); 
+                                            printf("%s %d\tCHARLIT\t%c\n", filename, line_ct, yylval.char_literal); 
                                             BEGIN(INITIAL);
                                             return CHARLIT;
                                         }
 <CHARLIT>[^\\n][^']+                    { 
-                                            printf("%s %d\tCHARLIT\t%.1s\n", filename, lc, yytext);
-                                            char *character = strdup(yytext);
-                                            yylval.string_literal = (char *)malloc(sizeof(char *));
-                                            for (int i = 0; i < 2; i++) {
-                                                yylval.string_literal[i] = character[i];
-                                            }
-                                            fprintf(stdout, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, lc);
-                                            BEGIN(MULTIBYTE);
+                                            yylval.char_literal = yytext[0];
+                                            printf("%s %d\tCHARLIT\t%c\n", filename, line_ct, yylval.char_literal); 
+                                            fprintf(stderr, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, line_ct);
+                                            BEGIN(INITIAL);
+                                            return CHARLIT;
                                         }
 <CHARLIT>\\[0abfnrtv\'\"\\][^']+        { 
-                                            printf("%s %d\tCHARLIT\t%.2s\n", filename, lc, yytext);
-                                            char *character = strdup(yytext);
-                                            yylval.string_literal = (char *)malloc(sizeof(char *));
-                                            for (int i = 0; i < 2; i++) {
-                                                yylval.string_literal[i] = character[i];
-                                            }
-                                            fprintf(stdout, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, lc);
-                                            BEGIN(MULTIBYTE);
+                                            char *temp = (char *)malloc(sizeof(char *));
+                                            temp[0] = yytext[1];
+                                            yylval.char_literal = lex_handle_esc(temp);
+                                            free(temp);
+                                            printf("%s %d\tCHARLIT\t%.2s\n", filename, line_ct, yytext); 
+                                            BEGIN(INITIAL);
+                                            return CHARLIT;
                                         }
-<MULTIBYTE>'$                           { BEGIN(INITIAL); return CHARLIT; } 
 
-^(L\")|(\")                             { BEGIN(STRING);
+^(L\")|(\")                             {  
+                                            BEGIN(STRING);
                                             str_size = 0;
                                             str = (char *)malloc(sizeof(char *));
-                                            printf("%s\t%d\tSTRING\t", filename, lc);
+                                            printf("%s\t%d\tSTRING\t", filename, line_ct);
                                         }
 <STRING>.                               { 
                                             lex_append_str(&str_size, &str, &yytext);
@@ -147,18 +138,18 @@ _IMAGINARY                              { LEX_MULTI_TOK(_IMAGINARY); }
                                         }
 <STRING>\\[xX][0-9a-fA-F]+              { 
                                             lex_append_str(&str_size, &str, &yytext);
+
                                             unsigned int dec_rep;
                                             sscanf(yytext + 2, "%x", &dec_rep);
 
-
-                                            if (dec_rep < 127 && dec_rep  > 32) {
+                                            if (dec_rep < MAX_READABLE_ASCII && dec_rep  > MIN_READABLE_ASCII) {
                                                 printf("%c", dec_rep);
                                             } else {
                                                 // Hex is getting stored in a char, which is max 1 byte (8 bits => 377 octal => 255 dec)
-                                                if (dec_rep > 255)
+                                                if (dec_rep > MAX_CHAR_BYTE_SIZE)
                                                 {
-                                                    dec_rep = 255;
-                                                    fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, lc, yytext);
+                                                    dec_rep = MAX_CHAR_BYTE_SIZE;
+                                                    fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
                                                 }
                                                 printf("\\%03o", dec_rep);
                                             }
@@ -167,7 +158,7 @@ _IMAGINARY                              { LEX_MULTI_TOK(_IMAGINARY); }
                                         }
 <STRING>\\[0-7]{1,3}                    { 
                                             lex_append_str(&str_size, &str, &yytext);
-                                            int yytext_size = strlen(yytext);
+                                            size_t yytext_size = strlen(yytext);
                                             if (yytext_size == 2 && yytext[1] == '0') {
                                                 printf("\\0"); 
                                             }

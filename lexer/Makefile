@@ -29,6 +29,9 @@ $(BUILDDIR):
 $(SOURCEDIR)/$(TARGET).c: $(LEXER)
 	flex -o $@ $<
 
+run: $(TARGET)
+	./$(TARGET)
+
 debug: $(TARGET)
 	gdb -tui ./$(TARGET)
 
