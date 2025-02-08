@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "tokens-manual.h"
+#include "lex.h"
 
 int lc;
 char *filename = NULL;
@@ -29,70 +29,70 @@ YYSTYPE yylval;
 
 [\n]                                    { lc++; }
 
-!|%|^|&|\*|-|\+|=|~|\||\.|<|>|\/|\?|;   { OP(yytext); }
-\[|\]                                   { OP(yytext); }
-\{|\}                                   { OP(yytext); }
-\(|\)                                   { OP(yytext); }
-->                                      { MULTI_OP(INDSEL); }
-\+\+                                    { MULTI_OP(PLUSPLUS); }
---                                      { MULTI_OP(MINUSMINUS); } 
-\<\<                                    { MULTI_OP(SHL); }
->>                                      { MULTI_OP(SHR); }
-\<=                                     { MULTI_OP(LTEQ); }
->=                                      { MULTI_OP(GTEQ); }
-==                                      { MULTI_OP(EQEQ); }
-!=                                      { MULTI_OP(NOTEQ); }
-&&                                      { MULTI_OP(LOGAND); }
-\|\|                                    { MULTI_OP(LOGOR); }
-\.\.\.                                  { MULTI_OP(ELLIPSIS); }
-\*=                                     { MULTI_OP(TIMESEQ); }
-\/=                                     { MULTI_OP(DIVEQ); }
-\%=                                     { MULTI_OP(MODEQ); }
-\+=                                     { MULTI_OP(PLUSEQ); }
--=                                      { MULTI_OP(MINUSEQ); }
-\<\<=                                   { MULTI_OP(SHLEQ); }
->>=                                     { MULTI_OP(SHREQ); }
-&=                                      { MULTI_OP(ANDEQ); }
-\|=                                     { MULTI_OP(OREQ); }
-\^=                                     { MULTI_OP(XOREQ); }
+!|%|^|&|\*|-|\+|=|~|\||\.|<|>|\/|\?|;   { LEX_SINGLE_TOK(yytext); }
+\[|\]                                   { LEX_SINGLE_TOK(yytext); }
+\{|\}                                   { LEX_SINGLE_TOK(yytext); }
+\(|\)                                   { LEX_SINGLE_TOK(yytext); }
+->                                      { LEX_MULTI_TOK(INDSEL); }
+\+\+                                    { LEX_MULTI_TOK(PLUSPLUS); }
+--                                      { LEX_MULTI_TOK(MINUSMINUS); } 
+\<\<                                    { LEX_MULTI_TOK(SHL); }
+>>                                      { LEX_MULTI_TOK(SHR); }
+\<=                                     { LEX_MULTI_TOK(LTEQ); }
+>=                                      { LEX_MULTI_TOK(GTEQ); }
+==                                      { LEX_MULTI_TOK(EQEQ); }
+!=                                      { LEX_MULTI_TOK(NOTEQ); }
+&&                                      { LEX_MULTI_TOK(LOGAND); }
+\|\|                                    { LEX_MULTI_TOK(LOGOR); }
+\.\.\.                                  { LEX_MULTI_TOK(ELLIPSIS); }
+\*=                                     { LEX_MULTI_TOK(TIMESEQ); }
+\/=                                     { LEX_MULTI_TOK(DIVEQ); }
+\%=                                     { LEX_MULTI_TOK(MODEQ); }
+\+=                                     { LEX_MULTI_TOK(PLUSEQ); }
+-=                                      { LEX_MULTI_TOK(MINUSEQ); }
+\<\<=                                   { LEX_MULTI_TOK(SHLEQ); }
+>>=                                     { LEX_MULTI_TOK(SHREQ); }
+&=                                      { LEX_MULTI_TOK(ANDEQ); }
+\|=                                     { LEX_MULTI_TOK(OREQ); }
+\^=                                     { LEX_MULTI_TOK(XOREQ); }
 
-AUTO                                    { MULTI_OP(AUTO); }
-BREAK                                   { MULTI_OP(BREAK); }
-CASE                                    { MULTI_OP(CASE); }
-CHAR                                    { MULTI_OP(CHAR); }
-CONST                                   { MULTI_OP(CONST); }
-CONTINUE                                { MULTI_OP(CONTINUE); }
-DEFAULT                                 { MULTI_OP(DEFAULT); }
-DO                                      { MULTI_OP(DO); }
-DOUBLE                                  { MULTI_OP(DOUBLE); }
-ELSE                                    { MULTI_OP(ELSE); }
-ENUM                                    { MULTI_OP(ENUM); }
-EXTERN                                  { MULTI_OP(EXTERN); }
-FLOAT                                   { MULTI_OP(FLOAT); }
-FOR                                     { MULTI_OP(FOR); }
-GOTO                                    { MULTI_OP(GOTO); }
-IF                                      { MULTI_OP(IF); }
-INLINE                                  { MULTI_OP(INLINE); }
-INT                                     { MULTI_OP(INT); }
-LONG                                    { MULTI_OP(LONG); }
-REGISTER                                { MULTI_OP(REGISTER); }
-RESTRICT                                { MULTI_OP(RESTRICT); }
-RETURN                                  { MULTI_OP(RETURN); }
-SHORT                                   { MULTI_OP(SHORT); }
-SIGNED                                  { MULTI_OP(SIGNED); }
-SIZEOF                                  { MULTI_OP(SIZEOF); }
-STATIC                                  { MULTI_OP(STATIC); }
-STRUCT                                  { MULTI_OP(STRUCT); }
-SWITCH                                  { MULTI_OP(SWITCH); }
-TYPEDEF                                 { MULTI_OP(TYPEDEF); }
-UNION                                   { MULTI_OP(UNION); }
-UNSIGNED                                { MULTI_OP(UNSIGNED); }
-VOID                                    { MULTI_OP(VOID); }
-VOLATILE                                { MULTI_OP(VOLATILE); }
-WHILE                                   { MULTI_OP(WHILE); }
-_BOOL                                   { MULTI_OP(_BOOL); }
-_COMPLEX                                { MULTI_OP(_COMPLEX); }
-_IMAGINARY                              { MULTI_OP(_IMAGINARY); }
+AUTO                                    { LEX_MULTI_TOK(AUTO); }
+BREAK                                   { LEX_MULTI_TOK(BREAK); }
+CASE                                    { LEX_MULTI_TOK(CASE); }
+CHAR                                    { LEX_MULTI_TOK(CHAR); }
+CONST                                   { LEX_MULTI_TOK(CONST); }
+CONTINUE                                { LEX_MULTI_TOK(CONTINUE); }
+DEFAULT                                 { LEX_MULTI_TOK(DEFAULT); }
+DO                                      { LEX_MULTI_TOK(DO); }
+DOUBLE                                  { LEX_MULTI_TOK(DOUBLE); }
+ELSE                                    { LEX_MULTI_TOK(ELSE); }
+ENUM                                    { LEX_MULTI_TOK(ENUM); }
+EXTERN                                  { LEX_MULTI_TOK(EXTERN); }
+FLOAT                                   { LEX_MULTI_TOK(FLOAT); }
+FOR                                     { LEX_MULTI_TOK(FOR); }
+GOTO                                    { LEX_MULTI_TOK(GOTO); }
+IF                                      { LEX_MULTI_TOK(IF); }
+INLINE                                  { LEX_MULTI_TOK(INLINE); }
+INT                                     { LEX_MULTI_TOK(INT); }
+LONG                                    { LEX_MULTI_TOK(LONG); }
+REGISTER                                { LEX_MULTI_TOK(REGISTER); }
+RESTRICT                                { LEX_MULTI_TOK(RESTRICT); }
+RETURN                                  { LEX_MULTI_TOK(RETURN); }
+SHORT                                   { LEX_MULTI_TOK(SHORT); }
+SIGNED                                  { LEX_MULTI_TOK(SIGNED); }
+SIZEOF                                  { LEX_MULTI_TOK(SIZEOF); }
+STATIC                                  { LEX_MULTI_TOK(STATIC); }
+STRUCT                                  { LEX_MULTI_TOK(STRUCT); }
+SWITCH                                  { LEX_MULTI_TOK(SWITCH); }
+TYPEDEF                                 { LEX_MULTI_TOK(TYPEDEF); }
+UNION                                   { LEX_MULTI_TOK(UNION); }
+UNSIGNED                                { LEX_MULTI_TOK(UNSIGNED); }
+VOID                                    { LEX_MULTI_TOK(VOID); }
+VOLATILE                                { LEX_MULTI_TOK(VOLATILE); }
+WHILE                                   { LEX_MULTI_TOK(WHILE); }
+_BOOL                                   { LEX_MULTI_TOK(_BOOL); }
+_COMPLEX                                { LEX_MULTI_TOK(_COMPLEX); }
+_IMAGINARY                              { LEX_MULTI_TOK(_IMAGINARY); }
 
 [0-9]+                                  { 
                                             printf("%s %d\tNUMBER\t%s\tINTEGER\n", filename, lc, yytext); 
@@ -103,22 +103,14 @@ _IMAGINARY                              { MULTI_OP(_IMAGINARY); }
 
 ^(L\')|(\')                             { BEGIN(CHARLIT); }
 <CHARLIT>\\[0abfnrtv\'\"\\]'            { 
+                                            yylval.char_literal = lex_handle_esc(yytext + 1);
                                             printf("%s %d\tCHARLIT\t%.2s\n", filename, lc, yytext); 
-                                            char *character = strdup(yytext);
-                                            yylval.string_literal = (char *)malloc(sizeof(char *));
-                                            for (int i = 0; i < 2; i++) {
-                                                yylval.string_literal[i] = character[i];
-                                            }
-                                            printf("%s\n", yylval.string_literal);
                                             BEGIN(INITIAL);
                                             return CHARLIT;
                                         }
 <CHARLIT>[^\\n]'                        { 
-                                            printf("%s %d\tCHARLIT\t%.1s\n", filename, lc, yytext); 
-                                            char *character = strdup(yytext);
-                                            yylval.string_literal = (char *)malloc(sizeof(char));
-                                            yylval.string_literal[0] = character[0];
-                                            printf("%s\n", yylval.string_literal);
+                                            yylval.char_literal = yytext[0];
+                                            printf("%s %d\tCHARLIT\t%c\n", filename, lc, yylval.char_literal); 
                                             BEGIN(INITIAL);
                                             return CHARLIT;
                                         }
@@ -150,11 +142,11 @@ _IMAGINARY                              { MULTI_OP(_IMAGINARY); }
                                             printf("%s\t%d\tSTRING\t", filename, lc);
                                         }
 <STRING>.                               { 
-                                            append_str(&str_size, &str, &yytext);
+                                            lex_append_str(&str_size, &str, &yytext);
                                             printf("%s", yytext);
                                         }
 <STRING>\\[xX][0-9a-fA-F]+              { 
-                                            append_str(&str_size, &str, &yytext);
+                                            lex_append_str(&str_size, &str, &yytext);
                                             unsigned int dec_rep;
                                             sscanf(yytext + 2, "%x", &dec_rep);
 
@@ -174,7 +166,7 @@ _IMAGINARY                              { MULTI_OP(_IMAGINARY); }
 
                                         }
 <STRING>\\[0-7]{1,3}                    { 
-                                            append_str(&str_size, &str, &yytext);
+                                            lex_append_str(&str_size, &str, &yytext);
                                             int yytext_size = strlen(yytext);
                                             if (yytext_size == 2 && yytext[1] == '0') {
                                                 printf("\\0"); 
@@ -196,7 +188,7 @@ _IMAGINARY                              { MULTI_OP(_IMAGINARY); }
                                             }
                                         }
 <STRING>\\\?                            { 
-                                            append_str(&str_size, &str, &yytext);
+                                            lex_append_str(&str_size, &str, &yytext);
                                             printf("\?"); 
                                         }
 <STRING>\"$                             { 
