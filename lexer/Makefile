@@ -1,5 +1,9 @@
-CFLAGS ?= -W -Wall -Wextra -Wundef -Wshadow -Wdouble-promotion \
-		  -Wformat-truncation -fno-common -Wconversion
+TARGET := jacc_lexer
+
+CFLAGS ?= -g3 -W -Wall -Wextra -Wundef -Wshadow -Wdouble-promotion \
+          -Wformat-truncation -fno-common -Wconversion
+
+BUILDDIR := build
 
 SOURCEDIR := src
 SOURCES := $(shell find $(SOURCEDIR) -name '*.c')
@@ -8,12 +12,26 @@ LEXER := $(shell find $(SOURCEDIR) -name '*.l')
 INCDIR := inc
 INCLUDES := $(addprefix -I, ./$(INCDIR))
 
-TARGET := jacc_lexer
+OBJ := $(patsubst $(SOURCEDIR)/%.c, $(BUILDDIR)/%.o, $(SOURCES))
+OBJ += $(BUILDDIR)/$(TARGET).o
 
-$(TARGET):
-	@flex -o $(SOURCEDIR)/$@.c $(LEXER)
-	@gcc $(INCLUDES) $(CFLAGS) $(SOURCES) -o $@
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	gcc $(INCLUDES) $(CFLAGS) $^ -o $@
+
+$(BUILDDIR)/%.o: $(SOURCEDIR)/%.c | $(BUILDDIR)
+	gcc $(INCLUDES) $(CFLAGS) -c $< -o $@
+
+$(BUILDDIR):
+	mkdir -p $(BUILDDIR)
+
+$(SOURCEDIR)/$(TARGET).c: $(LEXER)
+	flex -o $@ $<
+
+debug: $(TARGET)
+	gdb -tui ./$(TARGET)
 
 .PHONY: clean
 clean:
-	@rm $(TARGET)
+	@rm -rf $(TARGET) $(BUILDDIR) $(SOURCEDIR)/$(TARGET).c
