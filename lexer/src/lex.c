@@ -99,37 +99,40 @@ char lex_handle_esc(const char *s) {
     }
 }
 
-void lex_handle_nums(const char *yytext, YYSTYPE *yylval, const char *filename, int line_ct) {
+void lex_handle_integers(const char *yytext, YYSTYPE *yylval, const char *filename, int line_ct) {
     char *endptr;
-    unsigned long long num = strtoull(yytext, &endptr, 0);
+    unsigned long long val = strtoull(yytext, &endptr, 0);
 
     if (*endptr == '\0') {
         yylval->int_type = (int)val;
-        printf("%s\t%d\tNUMBER\tINTEGER\t%d\tINT\n", filename, line_ct, yylval->int_type); 
+        printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tINT\n", filename, line_ct, yylval->int_type); 
         return;
     }
 
-    if (strcmp(endptr, "U")) {
+    if (strcmp(endptr, "U") == 0) {
         yylval->uint_type = (unsigned int)val;
-        printf("%s\t%d\tNUMBER\tINTEGER\t%u\tUNSIGNED\n", filename, line_ct, yylval->uint_type); 
+        printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tUNSIGNED, INT\n", filename, line_ct, yylval->uint_type); 
         return;
     }
 
-    if (strcmp(endptr, "L")) {
-        yylval->long_type = (long))val;
-        printf("%s\t%d\tNUMBER\tINTEGER\t%ld\tLONG\n", filename, line_ct, yylval->uint_type); 
+    if (strcmp(endptr, "L") == 0) {
+        yylval->long_type = (long)val;
+        printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tLONG\n", filename, line_ct, yylval->long_type); 
         return;
     }
 
-    if (strcmp(endptr, "UL") || strcmp(endptr, "LU")) {
-        yylval->ulong_type = (unsigned long))val;
-        printf("%s\t%d\tNUMBER\tINTEGER\t%lu\tUNSIGNED, LONG\n", filename, line_ct, yylval->ulong_type); 
+    if (strcmp(endptr, "UL") == 0 || strcmp(endptr, "LU") == 0) {
+        yylval->ulong_type = (unsigned long)val;
+        printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tUNSIGNED, LONG\n", filename, line_ct, yylval->ulong_type); 
         return;
     }
 
-    if (strcmp(endptr, "ULL") || strcmp(endptr, "LUL") || strcmp(endptr, "LLU")) {
+    if (strcmp(endptr, "ULL") == 0 ||
+        strcmp(endptr, "LUL") == 0 ||
+        strcmp(endptr, "LLU") == 0   ) {
+
         yylval->ulonglong_type = val;
-        printf("%s\t%d\tNUMBER\tINTEGER\t%ld\tUNSIGNED, LONGLONG\n", filename, line_ct, yylval->ulonglong_type); 
+        printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tUNSIGNED, LONGLONG\n", filename, line_ct, yylval->ulonglong_type); 
         return;
     }
 }

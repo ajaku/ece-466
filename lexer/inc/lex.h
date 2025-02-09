@@ -9,6 +9,32 @@
 
 #define STRING_TOK_IDX(IDX) (IDX - 256)
 
+/* Don't support real numbers yet
+I am confused as to why:
+
+0x100p-7 -> 2 (double)
+017e+8 -> 1.7e09 (double)
+
+but
+
+0x100e-2 -> 4110 (int)
+
+
+Have some lexer elements set up to support it in the future (moving on for now)
+([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)         {
+                                            yylval.double_type = (double) strtold(yytext, NULL);
+                                            printf("%s %d\tNUMBER\tREAL\t%Lg\tDOUBLE\n", filename, line_ct, yylval.double_type); 
+                                            return NUMBER;
+                                        }
+([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)(L)$     {
+                                            yylval.ldouble_type = strtold(yytext, NULL);
+                                            printf("%s %d\tNUMBER\tREAL\t%s\tDOUBLE, LONG\n", filename, line_ct, yytext); 
+                                            return NUMBER;
+                                        }
+(0[xX][0-9a-fA-F]+)([pe][+-]?[0-9]+)+(L)?   {}
+
+*/
+
 typedef union {
     char *string_literal;
     char char_literal;
@@ -44,4 +70,4 @@ int lex_append_str(size_t *size, char **a, char **b);
 
 char lex_handle_esc(const char *s);
 
-void lex_handle_nums(const char *yytext, YYSTYPE *yylval, const char *filename, int line_ct);
+void lex_handle_integers(const char *yytext, YYSTYPE *yylval, const char *filename, int line_ct);
