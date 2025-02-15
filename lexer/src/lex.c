@@ -80,7 +80,7 @@ int lex_append_str(size_t *size, char **a, char **b) {
     return 0;
 }
 
-char lex_handle_esc(const char *s) {
+char lex_handle_esc(char *s) {
     switch(*s) {
         case '0': return '\0';
         case 'a': return '\a';
@@ -94,45 +94,46 @@ char lex_handle_esc(const char *s) {
         case '\"': return '\"';
         case '\\': return '\\';
         default:
-            fprintf(stdout, "Some strange error!\n");
+            fprintf(stderr, "Some strange error!\n");
             return *s;
     }
 }
 
-void lex_handle_integers(const char *yytext, YYSTYPE *yylval, const char *filename, int line_ct) {
+int lex_handle_integers(char *yytext, YYSTYPE *yylval) {
     char *endptr;
     unsigned long long val = strtoull(yytext, &endptr, 0);
 
     if (*endptr == '\0') {
-        yylval->int_type = (int)val;
-        printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tINT\n", filename, line_ct, yylval->int_type); 
-        return;
+        yylval->token.type = JACC_TYPE_INT;
+        yylval->token.data.int_type = (int)val;
+        return NUMBER;
     }
 
     if (strcmp(endptr, "U") == 0) {
-        yylval->uint_type = (unsigned int)val;
-        printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tUNSIGNED, INT\n", filename, line_ct, yylval->uint_type); 
-        return;
+        yylval->token.type = JACC_TYPE_UINT;
+        yylval->token.data.uint_type = (unsigned int)val;
+        return NUMBER;
     }
 
     if (strcmp(endptr, "L") == 0) {
-        yylval->long_type = (long)val;
-        printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tLONG\n", filename, line_ct, yylval->long_type); 
-        return;
+        yylval->token.type = JACC_TYPE_LONG;
+        yylval->token.data.long_type = (long)val;
+        return NUMBER;
     }
 
     if (strcmp(endptr, "UL") == 0 || strcmp(endptr, "LU") == 0) {
-        yylval->ulong_type = (unsigned long)val;
-        printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tUNSIGNED, LONG\n", filename, line_ct, yylval->ulong_type); 
-        return;
+        yylval->token.type = JACC_TYPE_ULONG;
+        yylval->token.data.ulong_type = (unsigned long)val;
+        return NUMBER;
     }
 
     if (strcmp(endptr, "ULL") == 0 ||
         strcmp(endptr, "LUL") == 0 ||
         strcmp(endptr, "LLU") == 0   ) {
 
-        yylval->ulonglong_type = val;
-        printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tUNSIGNED, LONGLONG\n", filename, line_ct, yylval->ulonglong_type); 
-        return;
+        yylval->token.type = JACC_TYPE_ULONGLONG;
+        yylval->token.data.ulonglong_type = val;
+        return NUMBER;
     }
+    return NUMBER;
 }
