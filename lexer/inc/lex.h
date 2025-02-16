@@ -96,5 +96,8 @@ extern const char *string_tokens[];
                 return OP;
 
 int lex_append_str(size_t *size, char **a, char **b);
+int lex_append_char(size_t *size, char **a, char b);
 int lex_handle_integers(char *yytext, YYSTYPE *yylval);
-char lex_handle_esc(char *s);
+char *lex_return_str_esc(char esc);
+char lex_handle_esc_char(char *s);
+char lex_handle_esc_str(char *s);

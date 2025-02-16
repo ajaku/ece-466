@@ -80,7 +80,14 @@ int lex_append_str(size_t *size, char **a, char **b) {
     return 0;
 }
 
-char lex_handle_esc(char *s) {
+int lex_append_char(size_t *size, char **a, char b) {
+    *size += 1;
+    *a = realloc(*a, *size + 1);
+    (*a)[*size - 1] = b;
+    return 0;
+}
+
+char lex_handle_esc_char(char *s) {
     switch(*s) {
         case '0': return '\0';
         case 'a': return '\a';
@@ -97,6 +104,84 @@ char lex_handle_esc(char *s) {
             fprintf(stderr, "Some strange error!\n");
             return *s;
     }
+}
+
+char lex_handle_esc_str(char *s) {
+    if (!strcmp(s, "\\0")) {
+        return '\0';
+    }
+    if (!strcmp(s, "\\a")) {
+        return '\a';
+    }
+    if (!strcmp(s, "\\b")) {
+        return '\b';
+    }
+    if (!strcmp(s, "\\f")) {
+        return '\f';
+    }
+    if (!strcmp(s, "\\n")) {
+        return '\n';
+    }
+    if (!strcmp(s, "\\r")) {
+        return '\r';
+    }
+    if (!strcmp(s, "\\t")) {
+        return '\t';
+    }
+    if (!strcmp(s, "\\v")) {
+        return '\v';
+    }
+    if (!strcmp(s, "\\\'")) {
+        return '\'';
+    }
+    if (!strcmp(s, "\\\"")) {
+        return '\"';
+    }
+    if (!strcmp(s, "\\\\")) {
+        return '\\';
+    }
+    if (!strcmp(s, "\\\?")) {
+        return '\?';
+    }
+
+    return NULL;
+}
+
+char *lex_return_str_esc(char esc) {
+    if (esc == '\0') {
+        return "\\0";
+    }
+    if (esc == '\a') {
+        return "\\a";
+    }
+    if (esc == '\b') {
+        return "\\b";
+    }
+    if (esc == '\f') {
+        return "\\f";
+    }
+    if (esc == '\n') {
+        return "\\n";
+    }
+    if (esc == '\r') {
+        return "\\r";
+    }
+    if (esc == '\t') {
+        return "\\t";
+    }
+    if (esc == '\v') {
+        return "\\v";
+    }
+    if (esc == '\'') {
+        return "\\\'";
+    }
+    if (esc == '\"') {
+        return "\\\"";
+    }
+    if (esc == '\\') {
+        return "\\\\";
+    }
+    return NULL;
 }
 
 int lex_handle_integers(char *yytext, YYSTYPE *yylval) {

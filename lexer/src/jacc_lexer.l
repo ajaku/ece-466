@@ -107,19 +107,22 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
 ^(L\')|(\')                                 { BEGIN(CHARLIT); }
 <CHARLIT>\\[0abfnrtv\'\"\\]'                { 
                                                 yylval.token.type = JACC_TYPE_CHAR_ESC;
-                                                yylval.token.data.char_literal = lex_handle_esc(yytext + 1);
+                                                yylval.token.data.char_literal = lex_handle_esc_char(yytext + 1);
+                                                yylval.token.size = 1;
                                                 BEGIN(INITIAL);
                                                 return CHARLIT;
                                             }
 <CHARLIT>[^\\]'                             { 
                                                 yylval.token.type = JACC_TYPE_CHARLIT;
                                                 yylval.token.data.char_literal = yytext[0];
+                                                yylval.token.size = 1;
                                                 BEGIN(INITIAL);
                                                 return CHARLIT;
                                             }
 <CHARLIT>[^\\][^']+                         { 
                                                 yylval.token.type = JACC_TYPE_CHARLIT;
                                                 yylval.token.data.char_literal = yytext[0];
+                                                yylval.token.size = 1;
                                                 fprintf(stderr, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, line_ct);
                                                 BEGIN(MULTIBYTE);
                                                 return CHARLIT;
@@ -128,7 +131,8 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                                 char *temp = (char *)malloc(sizeof(char *));
                                                 temp[0] = yytext[1];
                                                 yylval.token.type = JACC_TYPE_CHAR_ESC;
-                                                yylval.token.data.char_literal = lex_handle_esc(temp);
+                                                yylval.token.data.char_literal = lex_handle_esc_char(temp);
+                                                yylval.token.size = 1;
                                                 free(temp);
                                                 fprintf(stderr, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, line_ct);
                                                 BEGIN(MULTIBYTE);
@@ -139,10 +143,15 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
 ^(L\")|(\")                                 {  
                                                 BEGIN(STRING);
                                                 yylval.token.size = 0;
+                                                yylval.token.type = JACC_TYPE_STRING;
                                                 yylval.token.data.string_literal = (char *)malloc(sizeof(char *));
                                             }
 <STRING>.                                   { 
                                                 lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &yytext);
+                                            }
+<STRING>\\[0abfnrtv\'\"\\\?]                {
+                                                char char_to_app = lex_handle_esc_str(yytext);
+                                                lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, char_to_app);                                                   
                                             }
 <STRING>\\[xX][0-9a-fA-F]+                  { 
                                                 char *hex_str = (char *)malloc(sizeof(char *));
@@ -154,37 +163,33 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                                     fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
                                                 }
 
-                                                sprintf(hex_str, "\\%03o", hex_val);
-                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &hex_str);
-
+                                                sprintf(hex_str, "%03o", hex_val);
+                                                lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, (char)hex_val);
                                             }
 <STRING>\\[0-7]{1,3}                        { 
                                                 char *hex_str = (char *)malloc(sizeof(char *));
                                                 unsigned int hex_val = 0;
-                                                sscanf(yytext + 2, "%o", &hex_val);
+                                                sscanf(yytext + 1, "%o", &hex_val);
 
                                                 if(hex_val > UCHAR_MAX) {
                                                     hex_val = UCHAR_MAX;
                                                     fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
                                                 }
 
-                                                sprintf(hex_str, "\\%03o", hex_val);
-                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &hex_str);
-                                            }
-<STRING>\\\?                                { 
-                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &yytext);
-                                            }
-
-<STRING>\\\0                                { 
-                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &yytext);
+                                                lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, (char)hex_val);
                                             }
 <STRING>\"$                                 { 
+                                                lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, '\0');                                                   
                                                 BEGIN(INITIAL);
                                                 return STRING;
                                             }
 
 
-[_A-Za-z]+[_A-Za-z0-9]*                     { printf("%s\t%d\tIDENT\t%s\n", filename, line_ct, yytext); return IDENT; }
+[_A-Za-z]+[_A-Za-z0-9]*                     { 
+                                                yylval.token.type = JACC_TYPE_STRING;
+                                                yylval.token.data.string_literal = yytext;
+                                                yylval.token.size = strlen(yytext) + 1;
+                                                return IDENT; }
 .                                           { fprintf(stderr, "%s:%d:Error:Uncrecognized term %s\n", filename, line_ct, yytext); }
 %%
 
@@ -204,44 +209,12 @@ int main (int argc, char **argv) {
                 break;
 
             case IDENT:
+                printf("%s\t%d\tIDENT\t%s\n", filename, line_ct, yylval.token.data.string_literal); 
                 break;
 
             case CHARLIT:
-                char *esc_seq;
                 if (yylval.token.type == JACC_TYPE_CHAR_ESC) {
-                    if (yylval.token.data.char_literal == '\0') {
-                        esc_seq = "\\0";
-                    }
-                    if (yylval.token.data.char_literal == '\a') {
-                        esc_seq = "\\a";
-                    }
-                    if (yylval.token.data.char_literal == '\b') {
-                        esc_seq = "\\b";
-                    }
-                    if (yylval.token.data.char_literal == '\f') {
-                        esc_seq = "\\f";
-                    }
-                    if (yylval.token.data.char_literal == '\n') {
-                        esc_seq = "\\n";
-                    }
-                    if (yylval.token.data.char_literal == '\r') {
-                        esc_seq = "\\r";
-                    }
-                    if (yylval.token.data.char_literal == '\t') {
-                        esc_seq = "\\t";
-                    }
-                    if (yylval.token.data.char_literal == '\v') {
-                        esc_seq = "\\v";
-                    }
-                    if (yylval.token.data.char_literal == '\'') {
-                        esc_seq = "\\\'";
-                    }
-                    if (yylval.token.data.char_literal == '\"') {
-                        esc_seq = "\\\"";
-                    }
-                    if (yylval.token.data.char_literal == '\\') {
-                        esc_seq = "\\\\";
-                    }
+                    char *esc_seq = lex_return_str_esc(yylval.token.data.char_literal);
                     printf("%s %d\tCHARLIT\t%s\n", filename, line_ct, esc_seq); 
                 }
 
@@ -251,7 +224,22 @@ int main (int argc, char **argv) {
                 break;
 
             case STRING:
-                printf("%s\t%d\tSTRING\t%s\n", filename, line_ct, yylval.token.data.string_literal); 
+                printf("%s\t%d\tSTRING\t", filename, line_ct); 
+                char *targ_str = yylval.token.data.string_literal;
+                int i = 0;
+                // -1 because we dont want to print the null terminating byte
+                while (i < yylval.token.size - 1) {
+                    char* esc_char = lex_return_str_esc(targ_str[i]); 
+                    if (esc_char != NULL) {
+                        printf("%s", esc_char);
+                    } else if ((unsigned char)targ_str[i] <= 31 || (unsigned char)targ_str[i] >= 127) {
+                        printf("\\%03o", (unsigned char) targ_str[i]);
+                    } else {
+                        printf("%c", targ_str[i]);
+                    }
+                    i++;
+                }
+                printf("\n");
                 break;
 
             case NUMBER:
