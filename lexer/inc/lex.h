@@ -39,8 +39,6 @@ typedef enum {
 	JACC_TYPE_CHARLIT,
 	JACC_TYPE_CHAR_ESC,
 	JACC_TYPE_STRING,
-	JACC_TYPE_STRING_HEX,
-	JACC_TYPE_STRING_OCT,
 	JACC_TYPE_INT,
 	JACC_TYPE_UINT,
 	JACC_TYPE_LONG,
@@ -98,7 +96,5 @@ extern const char *string_tokens[];
                 return OP;
 
 int lex_append_str(size_t *size, char **a, char **b);
-
-char lex_handle_esc(char *s);
-
 int lex_handle_integers(char *yytext, YYSTYPE *yylval);
+char lex_handle_esc(char *s);

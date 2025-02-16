@@ -106,7 +106,7 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                             }
 ^(L\')|(\')                                 { BEGIN(CHARLIT); }
 <CHARLIT>\\[0abfnrtv\'\"\\]'                { 
-                                                yylval.token.type = JACC_TYPE_CHARESCP;
+                                                yylval.token.type = JACC_TYPE_CHAR_ESC;
                                                 yylval.token.data.char_literal = lex_handle_esc(yytext + 1);
                                                 BEGIN(INITIAL);
                                                 return CHARLIT;
@@ -127,7 +127,7 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
 <CHARLIT>\\[0abfnrtv\'\"\\][^']+            { 
                                                 char *temp = (char *)malloc(sizeof(char *));
                                                 temp[0] = yytext[1];
-                                                yylval.token.type = JACC_TYPE_CHARESCP;
+                                                yylval.token.type = JACC_TYPE_CHAR_ESC;
                                                 yylval.token.data.char_literal = lex_handle_esc(temp);
                                                 free(temp);
                                                 fprintf(stderr, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, line_ct);
@@ -145,49 +145,40 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                                 lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &yytext);
                                             }
 <STRING>\\[xX][0-9a-fA-F]+                  { 
-                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &yytext);
+                                                char *hex_str = (char *)malloc(sizeof(char *));
+                                                unsigned int hex_val = 0;
+                                                sscanf(yytext + 2, "%x", &hex_val);
 
-                                                unsigned int dec_rep;
-                                                sscanf(yytext + 2, "%x", &dec_rep);
-
-                                                if (dec_rep < MAX_READABLE_ASCII && dec_rep  > MIN_READABLE_ASCII) {
-                                                    printf("%c", dec_rep);
-                                                } else {
-                                                    // Hex is getting stored in a char, which is max 1 byte (8 bits => 377 octal => 255 dec)
-                                                    if (dec_rep > UCHAR_MAX)
-                                                    {
-                                                        dec_rep = UCHAR_MAX;
-                                                        fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
-                                                    }
+                                                if(hex_val > UCHAR_MAX) {
+                                                    hex_val = UCHAR_MAX;
+                                                    fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
                                                 }
+
+                                                sprintf(hex_str, "\\%03o", hex_val);
+                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &hex_str);
+
                                             }
 <STRING>\\[0-7]{1,3}                        { 
-                                                lex_append_str(&yylval.token.size, &str, &yytext);
-                                                size_t yytext_size = strlen(yytext);
-                                                if (yytext_size == 2 && yytext[1] == '0') {
-                                                    printf("\\0"); 
+                                                char *hex_str = (char *)malloc(sizeof(char *));
+                                                unsigned int hex_val = 0;
+                                                sscanf(yytext + 2, "%o", &hex_val);
+
+                                                if(hex_val > UCHAR_MAX) {
+                                                    hex_val = UCHAR_MAX;
+                                                    fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
                                                 }
-                                                else if (yytext_size == 2) {
-                                                    printf("\\00%d", 
-                                                            yytext[1] - '0');
-                                                }
-                                                else if (yytext_size == 3) {
-                                                    printf("\\0%d%d",
-                                                            yytext[1] - '0',
-                                                            yytext[2] - '0');
-                                                }
-                                                else if (yytext_size == 4) {
-                                                    printf("\\%d%d%d", 
-                                                            yytext[1] - '0',
-                                                            yytext[2] - '0',
-                                                            yytext[3] - '0');
-                                                }
+
+                                                sprintf(hex_str, "\\%03o", hex_val);
+                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &hex_str);
                                             }
 <STRING>\\\?                                { 
-                                                lex_append_str(&yylval.token.size, &str, &yytext);
+                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &yytext);
+                                            }
+
+<STRING>\\\0                                { 
+                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &yytext);
                                             }
 <STRING>\"$                                 { 
-                                                yylval.token.data.string_literal = str;
                                                 BEGIN(INITIAL);
                                                 return STRING;
                                             }
@@ -211,11 +202,13 @@ int main (int argc, char **argv) {
         switch (t) {
             case TOKEOF:
                 break;
+
             case IDENT:
                 break;
+
             case CHARLIT:
                 char *esc_seq;
-                if (yylval.token.type == JACC_TYPE_CHARESCP) {
+                if (yylval.token.type == JACC_TYPE_CHAR_ESC) {
                     if (yylval.token.data.char_literal == '\0') {
                         esc_seq = "\\0";
                     }
@@ -256,9 +249,11 @@ int main (int argc, char **argv) {
                     printf("%s %d\tCHARLIT\t%c\n", filename, line_ct, yylval.token.data.char_literal); 
                 }
                 break;
+
             case STRING:
-                printf("%s\t%d\tSTRINGt%s\n", filename, line_ct, yylval.token.data.string_literal); 
+                printf("%s\t%d\tSTRING\t%s\n", filename, line_ct, yylval.token.data.string_literal); 
                 break;
+
             case NUMBER:
                 if (yylval.token.type == JACC_TYPE_INT) {
                     printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tINT\n", filename, line_ct, yylval.token.data.int_type); 
@@ -276,6 +271,7 @@ int main (int argc, char **argv) {
                     printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tUNSIGNED, LONGLONG\n", filename, line_ct, yylval.token.data.ulonglong_type); 
                 }
                 break;
+
 
             // Case for single byte operator is handled within LEX_SINGLE_TOK
 
@@ -343,6 +339,7 @@ int main (int argc, char **argv) {
             case _IMAGINARY:
                 printf("%s\t%d\t%s\n", filename, line_ct, string_tokens[STRING_TOK_IDX(t)]);
                 break;
+
             default:
                 break;
         }
