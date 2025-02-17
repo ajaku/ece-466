@@ -9,7 +9,6 @@
 int line_ct;
 char *filename = NULL;
 char *str = NULL;
-YYSTYPE yylval;
 
 %}
 
@@ -154,7 +153,6 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                                 lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, char_to_app);                                                   
                                             }
 <STRING>\\[xX][0-9a-fA-F]+                  { 
-                                                char *hex_str = (char *)malloc(sizeof(char *));
                                                 unsigned int hex_val = 0;
                                                 sscanf(yytext + 2, "%x", &hex_val);
 
@@ -163,11 +161,9 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                                     fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
                                                 }
 
-                                                sprintf(hex_str, "%03o", hex_val);
                                                 lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, (char)hex_val);
                                             }
 <STRING>\\[0-7]{1,3}                        { 
-                                                char *hex_str = (char *)malloc(sizeof(char *));
                                                 unsigned int hex_val = 0;
                                                 sscanf(yytext + 1, "%o", &hex_val);
 
