@@ -35,7 +35,7 @@ typedef union {
 typedef struct {
     jacc_data_type_t    type;
     jacc_stored_data_t  data;
-    size_t             size;
+    size_t              size;
 } jacc_yystruct_t;
 
 typedef union {

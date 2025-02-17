@@ -107,80 +107,35 @@ char lex_handle_esc_char(char *s) {
 }
 
 char lex_handle_esc_str(char *s) {
-    if (!strcmp(s, "\\0")) {
-        return '\0';
-    }
-    if (!strcmp(s, "\\a")) {
-        return '\a';
-    }
-    if (!strcmp(s, "\\b")) {
-        return '\b';
-    }
-    if (!strcmp(s, "\\f")) {
-        return '\f';
-    }
-    if (!strcmp(s, "\\n")) {
-        return '\n';
-    }
-    if (!strcmp(s, "\\r")) {
-        return '\r';
-    }
-    if (!strcmp(s, "\\t")) {
-        return '\t';
-    }
-    if (!strcmp(s, "\\v")) {
-        return '\v';
-    }
-    if (!strcmp(s, "\\\'")) {
-        return '\'';
-    }
-    if (!strcmp(s, "\\\"")) {
-        return '\"';
-    }
-    if (!strcmp(s, "\\\\")) {
-        return '\\';
-    }
-    if (!strcmp(s, "\\\?")) {
-        return '\?';
-    }
+    if (!strcmp(s, "\\0")) return '\0';
+    if (!strcmp(s, "\\a")) return '\a';
+    if (!strcmp(s, "\\b")) return '\b';
+    if (!strcmp(s, "\\f")) return '\f';
+    if (!strcmp(s, "\\n")) return '\n';
+    if (!strcmp(s, "\\r")) return '\r';
+    if (!strcmp(s, "\\t")) return '\t';
+    if (!strcmp(s, "\\v")) return '\v';
+    if (!strcmp(s, "\\\'")) return '\'';
+    if (!strcmp(s, "\\\"")) return '\"';
+    if (!strcmp(s, "\\\\")) return '\\';
+    if (!strcmp(s, "\\\?")) return '\?';
 
     return NULL; //what would be the correct error to return here?
 }
 
 char *lex_return_str_esc(char esc) {
-    if (esc == '\0') {
-        return "\\0";
-    }
-    if (esc == '\a') {
-        return "\\a";
-    }
-    if (esc == '\b') {
-        return "\\b";
-    }
-    if (esc == '\f') {
-        return "\\f";
-    }
-    if (esc == '\n') {
-        return "\\n";
-    }
-    if (esc == '\r') {
-        return "\\r";
-    }
-    if (esc == '\t') {
-        return "\\t";
-    }
-    if (esc == '\v') {
-        return "\\v";
-    }
-    if (esc == '\'') {
-        return "\\\'";
-    }
-    if (esc == '\"') {
-        return "\\\"";
-    }
-    if (esc == '\\') {
-        return "\\\\";
-    }
+    if (esc == '\0') return "\\0"; 
+    if (esc == '\a') return "\\a";
+    if (esc == '\b') return "\\b";
+    if (esc == '\f') return "\\f";
+    if (esc == '\n') return "\\n";
+    if (esc == '\r') return "\\r";
+    if (esc == '\t') return "\\t";
+    if (esc == '\v') return "\\v";
+    if (esc == '\'') return "\\\'";
+    if (esc == '\"') return "\\\"";
+    if (esc == '\\') return "\\\\";
+
     return NULL;
 }
 
