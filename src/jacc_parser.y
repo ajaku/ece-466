@@ -9,7 +9,6 @@ int yylex(void);
 
 %define api.value.type { jacc_yystype_t }
 
-%token TOKEOF
 %token IDENT
 %token CHARLIT        // `byte` (we don't support multibyte)
 %token STRING         // "<here>"
@@ -74,248 +73,208 @@ int yylex(void);
 %token _COMPLEX       // _complex
 %token _IMAGINARY      // _imaginary
 
+
+// Precedence = 16
+%left '(' ')' '[' ']'  '.' INDSEL PLUSPLUS MINUSMINUS
+// Precedence = 15
+%right SIZEOF '~' // '|' '-' '+' '&' '*'
+// Precedence = 14
+// %left type_name
+// Precedence = 13
+%left '*' '/' '%'
+// Precedence = 12
+%left '+' '-'
+// Precedence = 11
+%left SHL SHR
+// Precedence = 10
+%left '<' '>' LTEQ GTEQ
+// Precedence = 9
+%left EQEQ NOTEQ
+// Precedence = 8
+%left '&'
+// Precedence = 7
+%left '^'
+// Precedence = 6
+%left '|'
+// Precedence = 5
+%left LOGAND
+// Precedence = 4
+%left LOGOR
+// Precedence = 3
+%right '?' ':'
+// Precedence = 2
+%right '=' PLUSEQ MINUSEQ TIMESEQ DIVEQ MODEQ SHLEQ SHREQ ANDEQ XOREQ OREQ
+// Precedence = 1
+%left ','
+
 %%
 
-primary_expression
-    : IDENT
-    | NUMBER /* WAS CONST */
+expression
+    : IDENT /* 6.5.1 Primary Expressions */
+    { printf("IDENT\n"); }
+
+    | NUMBER
+    { printf("NUMBER\n"); }
+
+    | CHARLIT
+    { printf("CHARLIT\n"); }
+
     | STRING
-    | parenthesized_expression
-    ;
+    { printf("IDENT\n"); }
 
-parenthesized_expression
-    : '(' expression ')'
-    ;
+    | '(' expression ')'
+    { printf("(expression)\n"); }
 
-postfix_expression
-    : primary_expression
-    | subscript_expression
-    | component_selection_expression
-    | function_call
-    | postincrement_expression
-    | postdecrement_expression
-    | /* compound_literal */ /* not dealing with for now */
-    ;
+    /* 6.5.2 Postfix Operators */
+    | expression '[' expression ']'
+    { printf("expression[expression]\n"); }
 
-subscript_expression
-    : postfix_expression '[' expression ']'
-    ;
+    | expression '(' ')'
+    { printf("expression()\n"); }
 
-component_selection_expression
-    : direct_component_selection
-    | indirect_component_selection
-    ;
+    | expression '(' expression ')'
+    { printf("expression(argument)\n"); }
 
-direct_component_selection
-    : postfix_expression '.' IDENT
-    ;
+    | expression '.' IDENT
+    { printf("expression.ident\n"); }
 
-indirect_component_selection
-    : postfix_expression INDSEL IDENT
-    ;
+    | expression INDSEL IDENT
+    { printf("expressiont->ident\n"); }
 
-function_call
-    : postfix_expression '(' expression_list ')'
-    ;
+    | expression PLUSPLUS
+    { printf("expression++\n"); }
 
-expression_list
-    : assignment_expression
-    | expression_list ',' assignment_expression
-    ;
+    | expression MINUSMINUS
+    { printf("expression--\n"); }
 
-postincrement_expression
-    : postfix_expression PLUSPLUS
-    ;
+    /* 6.5.3 Unary Operators */
+    | PLUSPLUS expression // right-to left (conflicts with earlier def, what do we do!)
+    { printf("++expression\n"); }
 
-postdecrement_expression
-    : postfix_expression MINUSMINUS
-    ;
+    | MINUSMINUS expression // right-to left (conflicts with earlier def, what do we do!)
+    { printf("--expression\n"); }
 
-cast_expression
-    : unary_expression
-    | '(' type_name ')' cast_expression
-    ;
+    // Would be cast operations, but no type support atm
 
-unary_expression
-    : postfix_expression
-    | sizeof_expression
-    | unary_minus_expression
-    | unary_plus_expression
-    | logical_negation_expression
-    | bitwise_negation_expression
-    | address_expression
-    | indirection_expression
-    | preincrement_expression
-    | predecrement_expression
-    ;
+    | SIZEOF expression
+    { printf("SIZEOF expression\n"); }
 
-sizeof_expression
-    : SIZEOF '(' type_name ')'
-    | SIZEOF unary_expression
-    ;
+    // Would be SIZEOF type name, but no types
 
-unary_minus_expression
-    : '-' cast_expression
-    ;
+    /* 6.5.5 Multiplicative Operators */
+    | expression '*' expression
+    { printf("expression * expression\n"); }
+     
+    | expression '/' expression
+    { printf("expression / expression\n"); }
 
-unary_plus_expression
-    : '+' cast_expression
-    ;
+    | expression '%' expression
+    { printf("expression %% expression\n"); }
 
-logical_negation_expression
-    : '!' cast_expression
-    ;
+    /* 6.5.6 Additive Operators */
+    | expression '+' expression
+    { printf("expression + expression\n"); }
 
-bitwise_negation_expression
-    : '~' cast_expression
-    ;
+    | expression '-' expression
+    { printf("expression - expression\n"); }
 
-address_expression
-    : '&' cast_expression
-    ;
+    /* 6.5.7 Bitwise Shift Operators */
+    | expression SHL expression
+    { printf("expression << expression\n"); }
 
-indirection_expression
-    : '*' cast_expression
-    ;
+    | expression SHR expression
+    { printf("expression >> expression\n"); }
 
-preincrement_expression
-    : PLUSPLUS unary_expression
-    ;
+    /* 6.5.8 Relational Operators */
+    | expression '<' expression
+    { printf("expression < expression\n"); }
 
-predecrement_expression
-    : MINUSMINUS unary_expression
-    ;
+    | expression '>' expression
+    { printf("expression > expression\n"); }
 
-multiplicative_expression
-    : cast_expression
-    | multiplicative_expression multi_op cast_expression
-    ;
+    | expression LTEQ expression
+    { printf("expression <= expression\n"); }
 
-multi_op
-    : '*'
-    | '/'
-    | '%'
-    ;
+    | expression GTEQ expression
+    { printf("expression >= expression\n"); }
 
-additive_expression
-    : multiplicative_expression
-    | additive_expression add_op multiplicative_expression
-    ;
+    /* 6.5.9 Equality Operators */
+    | expression EQEQ expression
+    { printf("expression == expression\n"); }
 
-add_op
-    : '+'
-    | '-'
-    ;
+    | expression NOTEQ expression
+    { printf("expression != expression\n"); }
 
-shift_expression
-    : additive_expression
-    | shift_expression shift_op additive_expression
-    ;
+    /* 6.5.10 Bitwise AND Operator */
+    | expression '&' expression
+    { printf("expression & expression\n"); }
 
-shift_op
-    : SHL
-    | SHR
-    ;
+    /* 6.5.11 Bitwise XOR Operator */
+    | expression '^' expression
+    { printf("expression ^ expression\n"); }
 
-relational_expression
-    : shift_expression
-    | relational_expression relational_op shift_expression
-    ;
+    /* 6.5.12 Bitwise OR Operator */
+    | expression '|' expression
+    { printf("expression | expression\n"); }
 
-relational_op
-    : '<'
-    | LTEQ
-    | '>'
-    | GTEQ
-    ;
+    /* 6.5.13 Logical AND Operator */
+    | expression LOGAND expression
+    { printf("expression && expression\n"); }
 
-equality_expression
-    : relational_expression
-    | equality_expression equality_op relational_expression
-    ;
+    /* 6.5.14 Logical OR Operator */
+    | expression LOGOR expression
+    { printf("expression || expression\n"); }
 
-equality_op
-    : EQEQ
-    | NOTEQ
-    ;
+    /* 6.5.15 Conditional Operators */
+    | expression '?' expression
+    { printf("expression ? expression\n"); }
 
-// Review bitwise bozos
+    | expression ':' expression
+    { printf("expression : expression\n"); }
 
-bitwise_or_expression
-    : bitwise_xor_expression
-    | bitwise_or_expression '|' bitwise_xor_expression
-    ;
+    /* 6.5.16 Assignment Operators */
+    | expression '=' expression
+    { printf("expression = expression\n"); }
 
-bitwise_xor_expression
-    : bitwise_and_expression
-    | bitwise_xor_expression '^' bitwise_and_expression
-    ;
+    | expression PLUSEQ expression
+    { printf("expression += expression\n"); }
 
-bitwise_and_expression
-    : equality_expression
-    | bitwise_and_expression '&' equality_expression
-    ;
+    | expression MINUSEQ expression
+    { printf("expression -= expression\n"); }
 
-logical_or_expression
-    : logical_and_expression
-    | logical_or_expression LOGOR logical_and_expression
-    ;
+    | expression TIMESEQ expression
+    { printf("expression *= expression\n"); }
 
-logical_and_expression
-    : bitwise_or_expression
-    | logical_and_expression LOGAND bitwise_or_expression
-    ;
+    | expression DIVEQ expression
+    { printf("expression \\= expression\n"); }
 
-conditional_expression
-    : logical_or_expression
-    | logical_or_expression '?' expression ':' conditional_expression
-    ;
+    | expression MODEQ expression
+    { printf("expression %%= expression\n"); }
 
-assignment_expression
-    : conditional_expression
-    | unary_expression assignment_op assignment_expression
-    ;
+    | expression SHLEQ expression
+    { printf("expression <<= expression\n"); }
 
-assignment_op
-    : '='
-    | PLUSEQ
-    | MINUSEQ
-    | TIMESEQ
-    | DIVEQ
-    | MODEQ
-    | SHLEQ
-    | SHREQ
-    | ANDEQ
-    | XOREQ
-    | OREQ
-    ;
+    | expression SHREQ expression
+    { printf("expression >>= expression\n"); }
 
-comma_expression
-    : assignment_expression
-    | comma_expression ',' assignment_expression
-    ;
+    | expression ANDEQ expression
+    { printf("expression &= expression\n"); }
 
-expression:
-    comma_expression
-    ;
+    | expression XOREQ expression
+    { printf("expression ^= expression\n"); }
 
-// definitely wrong, temporary until more support added
-type_name
-    : VOID
-    | CHAR
-    | SHORT
-    | INT
-    | LONG
-    | FLOAT
-    | DOUBLE
-    | SIGNED
-    | UNSIGNED
+    | expression OREQ expression
+    { printf("expression |= expression\n"); }
+
+    /* 6.5.17 Comma Operator */
+    | expression ',' expression
+    { printf("expression , expression\n"); }
     ;
 
 %%
 
 void yyerror(const char *s) {
-    fprintf(stderr, "HELP Error: %s\n", s);
+    //fprintf(stderr, "HELP Error: %s\n", s);
 }
 
 int main(void) {

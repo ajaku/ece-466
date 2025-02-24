@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include "lex.h"
+#include "jacc_parser.tab.h"
 
 
 int line_ct;
@@ -185,7 +186,7 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                                 yylval.token.data.string_literal = yytext;
                                                 yylval.token.size = strlen(yytext) + 1;
                                                 return IDENT; }
-.                                           { fprintf(stderr, "%s:%d:Error:Uncrecognized term %s\n", filename, line_ct, yytext); }
+.                                           { ; /*fprintf(stderr, "%s:%d:Error:Uncrecognized term %s\n", filename, line_ct, yytext);*/ }
 %%
 
 /*
