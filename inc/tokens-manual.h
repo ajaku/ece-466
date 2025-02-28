@@ -1,10 +1,10 @@
+/*
 enum tokens {
 	TOKEOF=0,
 	IDENT=257,
 	CHARLIT,        // `byte` (we don't support multibyte)
 	STRING,         // "<here>"
 	NUMBER,         // Numerical value - will be specified as INT, DOUBLE, ETC.
-    /* Operators */
 	INDSEL,         // ->
 	PLUSPLUS,       // ++
 	MINUSMINUS,     // --
@@ -27,7 +27,6 @@ enum tokens {
 	ANDEQ,          // &=
 	OREQ,           // |=
 	XOREQ,          // ^=
-    /* Keywords */
 	AUTO,           // auto
 	BREAK,          // break
 	CASE,           // case
@@ -66,3 +65,4 @@ enum tokens {
 	_COMPLEX,       // _complex
 	_IMAGINARY      // _imaginary
 };
+*/

@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <limits.h>
 #include "lex.h"
-#include "jacc_parser.tab.h"
-
 
 int line_ct;
 char *filename = NULL;
