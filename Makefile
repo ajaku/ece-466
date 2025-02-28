@@ -49,5 +49,5 @@ debug: $(TARGET)
 
 .PHONY: clean
 clean:
-	@rm -rf $(TARGET) $(BUILDDIR) $(SOURCEDIR)/$(BISON_TARGET).c $(SOURCEDIR)/$(FLEX_TARGET).c $(SOURCEDIR)/$(BISON_TARGET).h $(SOURCEDIR)/$(TARGET)_parser.output
+	@rm -rf $(TARGET) $(BUILDDIR)
 
