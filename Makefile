@@ -39,15 +39,12 @@ $(TARGET): $(BISON_DEP) $(FLEX_DEP)
 	gcc $(INCLUDES) $(CFLAGS) -c $(SOURCEDIR)/$(SOURCES_ONLY).c -o $(BUILDDIR)/$(SOURCES_ONLY).o
 	gcc -D PARSER $(INCLUDES) $(CFLAGS) $^ $(OBJ) -o $@
 
-
 run: $(TARGET)
 	./$(TARGET)
 
 debug: $(TARGET)
 	gdb -tui ./$(TARGET)
 
-
 .PHONY: clean
 clean:
 	@rm -rf $(TARGET) $(BUILDDIR)
-

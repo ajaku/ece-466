@@ -10,7 +10,6 @@
 extern const char *string_tokens[];
 
 #define LEX_SINGLE_TOK(YYTEXT) \
-                printf("%s\t%d\t%s\n", filename, line_ct, YYTEXT); \
                 yylval.token.type = JACC_TYPE_STRING; \
                 yylval.token.data.string_literal = strdup(YYTEXT); \
                 return (int)(*YYTEXT);
