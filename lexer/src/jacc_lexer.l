@@ -10,7 +10,7 @@ int line_ct;
 char *filename = NULL;
 char *str = NULL;
 
-YYSTYPE yylval;
+// YYSTYPE yylval;
 
 %}
 
@@ -199,6 +199,7 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
 .                                           { fprintf(stderr, "%s:%d:Error:Uncrecognized term %s\n", filename, line_ct, yytext); }
 %%
 
+/*
 int main (int argc, char **argv) {
     ++argv, --argc;
 
@@ -339,3 +340,4 @@ int main (int argc, char **argv) {
         }
     }
 }
+*/
