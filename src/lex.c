@@ -120,7 +120,7 @@ char lex_handle_esc_str(char *s) {
     if (!strcmp(s, "\\\\")) return '\\';
     if (!strcmp(s, "\\\?")) return '\?';
 
-    return NULL; //what would be the correct error to return here?
+    return 1; //what would be the correct error to return here?
 }
 
 char *lex_return_str_esc(char esc) {
