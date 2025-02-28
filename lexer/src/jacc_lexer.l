@@ -10,13 +10,15 @@ int line_ct;
 char *filename = NULL;
 char *str = NULL;
 
+YYSTYPE yylval;
+
 %}
 
 NUM_EXTENSIONS              ((U|L|UL|LU|ULL|LUL|LLU)?)
 
-%x CHARLIT
+%x CHAR_TOK
 %x MULTIBYTE
-%x STRING
+%x STR_TOK
 
 %%
 #.*                                         {
@@ -103,22 +105,22 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
 (0[xX][0-9a-fA-F]+){NUM_EXTENSIONS}         { 
                                                 return lex_handle_integers(yytext, &yylval);
                                             }
-^(L\')|(\')                                 { BEGIN(CHARLIT); }
-<CHARLIT>\\[0abfnrtv\'\"\\]'                { 
+(L\')|(\')                                  { BEGIN(CHAR_TOK); }
+<CHAR_TOK>\\[0abfnrtv\'\"\\]'               { 
                                                 yylval.token.type = JACC_TYPE_CHAR_ESC;
                                                 yylval.token.data.char_literal = lex_handle_esc_char(yytext + 1);
                                                 yylval.token.size = 1;
                                                 BEGIN(INITIAL);
                                                 return CHARLIT;
                                             }
-<CHARLIT>[^\\]'                             { 
+<CHAR_TOK>[^\\]'                            { 
                                                 yylval.token.type = JACC_TYPE_CHARLIT;
                                                 yylval.token.data.char_literal = yytext[0];
                                                 yylval.token.size = 1;
                                                 BEGIN(INITIAL);
                                                 return CHARLIT;
                                             }
-<CHARLIT>[^\\][^']+                         { 
+<CHAR_TOK>[^\\][^']+                        { 
                                                 yylval.token.type = JACC_TYPE_CHARLIT;
                                                 yylval.token.data.char_literal = yytext[0];
                                                 yylval.token.size = 1;
@@ -126,7 +128,11 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                                 BEGIN(MULTIBYTE);
                                                 return CHARLIT;
                                             }
-<CHARLIT>\\[0abfnrtv\'\"\\][^']+            { 
+<CHAR_TOK><<EOF>>                           { 
+                                                fprintf(stderr, "ERROR:EOF detected mid parse of a character sequence.\n");
+                                                return 0;
+                                            }
+<CHAR_TOK>\\[0abfnrtv\'\"\\][^']+           { 
                                                 char *temp = (char *)malloc(sizeof(char *));
                                                 temp[0] = yytext[1];
                                                 yylval.token.type = JACC_TYPE_CHAR_ESC;
@@ -137,22 +143,19 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                                 BEGIN(MULTIBYTE);
                                                 return CHARLIT;
                                             }
-<MULTIBYTE>'$                               { BEGIN(INITIAL); } 
+<MULTIBYTE>'                                { BEGIN(INITIAL); } 
 
-^(L\")|(\")                                 {  
-                                                BEGIN(STRING);
+(L\")|(\")                                  {  
+                                                BEGIN(STR_TOK);
                                                 yylval.token.size = 0;
                                                 yylval.token.type = JACC_TYPE_STRING;
                                                 yylval.token.data.string_literal = (char *)malloc(sizeof(char *));
                                             }
-<STRING>.                                   { 
-                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &yytext);
-                                            }
-<STRING>\\[0abfnrtv\'\"\\\?]                {
+<STR_TOK>\\[0abfnrtv\'\"\\\?]               {
                                                 char char_to_app = lex_handle_esc_str(yytext);
                                                 lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, char_to_app);                                                   
                                             }
-<STRING>\\[xX][0-9a-fA-F]+                  { 
+<STR_TOK>\\[xX][0-9a-fA-F]+                 { 
                                                 unsigned int hex_val = 0;
                                                 sscanf(yytext + 2, "%x", &hex_val);
 
@@ -163,7 +166,7 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
 
                                                 lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, (char)hex_val);
                                             }
-<STRING>\\[0-7]{1,3}                        { 
+<STR_TOK>\\[0-7]{1,3}                       { 
                                                 unsigned int hex_val = 0;
                                                 sscanf(yytext + 1, "%o", &hex_val);
 
@@ -174,10 +177,17 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
 
                                                 lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, (char)hex_val);
                                             }
-<STRING>\"$                                 { 
+<STR_TOK>\"                                 { 
                                                 lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, '\0');                                                   
                                                 BEGIN(INITIAL);
                                                 return STRING;
+                                            }
+<STR_TOK><<EOF>>                            { 
+                                                fprintf(stderr, "ERROR:EOF detected mid parse within a string.\n");
+                                                return 0;
+                                            }
+<STR_TOK>.                                  { 
+                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &yytext);
                                             }
 
 

@@ -80,18 +80,18 @@ typedef union {
     jacc_yystype_t token;
 } YYSTYPE;
 
-extern YYSTYPE yylval;
+//extern YYSTYPE yylval;
 
 extern const char *string_tokens[];
 
 #define LEX_SINGLE_TOK(YYTEXT) \
                 printf("%s\t%d\t%s\n", filename, line_ct, YYTEXT); \
-                yylval.token.type = STRING; \
+                yylval.token.type = JACC_TYPE_STRING; \
                 yylval.token.data.string_literal = strdup(YYTEXT); \
                 return (int)(*YYTEXT);
 
 #define LEX_MULTI_TOK(OP) \
-                yylval.token.type = STRING; \
+                yylval.token.type = JACC_TYPE_STRING; \
                 yylval.token.data.string_literal = strdup(yytext); \
                 return OP;
 
