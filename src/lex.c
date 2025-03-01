@@ -139,31 +139,31 @@ char *lex_return_str_esc(char esc) {
     return NULL;
 }
 
-int lex_handle_integers(char *yytext, YYSTYPE *yylval) {
+int lex_handle_integers(char *yytext, jacc_yystype_t *token) {
     char *endptr;
     unsigned long long val = strtoull(yytext, &endptr, 0);
 
     if (*endptr == '\0') {
-        yylval->token.type = JACC_TYPE_INT;
-        yylval->token.data.int_type = (int)val;
+        token->token.type = JACC_TYPE_INT;
+        token->token.data.int_type = (int)val;
         return NUMBER;
     }
 
     if (strcmp(endptr, "U") == 0) {
-        yylval->token.type = JACC_TYPE_UINT;
-        yylval->token.data.uint_type = (unsigned int)val;
+        token->token.type = JACC_TYPE_UINT;
+        token->token.data.uint_type = (unsigned int)val;
         return NUMBER;
     }
 
     if (strcmp(endptr, "L") == 0) {
-        yylval->token.type = JACC_TYPE_LONG;
-        yylval->token.data.long_type = (long)val;
+        token->token.type = JACC_TYPE_LONG;
+        token->token.data.long_type = (long)val;
         return NUMBER;
     }
 
     if (strcmp(endptr, "UL") == 0 || strcmp(endptr, "LU") == 0) {
-        yylval->token.type = JACC_TYPE_ULONG;
-        yylval->token.data.ulong_type = (unsigned long)val;
+        token->token.type = JACC_TYPE_ULONG;
+        token->token.data.ulong_type = (unsigned long)val;
         return NUMBER;
     }
 
@@ -171,8 +171,8 @@ int lex_handle_integers(char *yytext, YYSTYPE *yylval) {
         strcmp(endptr, "LUL") == 0 ||
         strcmp(endptr, "LLU") == 0   ) {
 
-        yylval->token.type = JACC_TYPE_ULONGLONG;
-        yylval->token.data.ulonglong_type = val;
+        token->token.type = JACC_TYPE_ULONGLONG;
+        token->token.data.ulonglong_type = val;
         return NUMBER;
     }
     return NUMBER;

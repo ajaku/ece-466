@@ -81,6 +81,7 @@ primary_expression
     : IDENT
     | NUMBER
     | STRING
+    | CHARLIT
     | '(' expression ')'
     ;
 
