@@ -1,9 +1,8 @@
 #pragma once
 
 #include <stddef.h>
-#include "ast.h"
 
-typedef enum {
+typedef enum jacc_data_type {
   JACC_TYPE_CHARLIT,
   JACC_TYPE_CHAR_ESC,
   JACC_TYPE_STRING,
@@ -18,7 +17,7 @@ typedef enum {
   JACC_TYPE_LDOUBLE
 } jacc_data_type_t;
 
-typedef union {
+typedef union jacc_stored_data {
   char char_literal;
   char *string_literal;
 
@@ -37,13 +36,13 @@ typedef union {
 
 } jacc_stored_data_t;
 
-typedef struct {
+typedef struct jacc_yystruct {
   jacc_data_type_t type;
   jacc_stored_data_t data;
   size_t size;
 } jacc_yystruct_t;
 
-typedef union {
+typedef union jacc_yystype {
   jacc_yystruct_t token;
-  struct astnode astnode;
+  struct jacc_ast_node *ast;
 } jacc_yystype_t;

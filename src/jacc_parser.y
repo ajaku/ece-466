@@ -1,10 +1,13 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-#include "types.h"
+#include "ast.h"
 
 void yyerror(const char * s);
 int yylex(void);
+
+jacc_ast_node_t *ast;
+
 %}
 
 %define api.value.type { jacc_yystype_t }
@@ -78,18 +81,36 @@ int yylex(void);
 %%
 
 primary_expression
-    : IDENT
-    | NUMBER
-    | STRING
-    | CHARLIT
-    | '(' expression ')'
+    : IDENT     
+        { $$.ast = jacc_alloc_ident_node(&$$);  }
+    | NUMBER    
+        { $$.ast = jacc_alloc_num_node(&$$);    }
+    | STRING    
+        { $$.ast = jacc_alloc_ident_node(&$$);  }
+    | CHARLIT   
+        { $$.ast = jacc_alloc_ident_node(&$$);  }
+    | '(' expression ')' 
+        { 
+            jacc_yystype_t temp = $$;
+            jacc_yystype_t temp1 = $1;
+            jacc_yystype_t temp2 = $2;
+            $$ = $2;
+        }
     ;
 
 postfix_expression
     : primary_expression
     | postfix_expression '[' expression ']'
-    | postfix_expression '(' argument_expression_list ')'
+        {$$ = $3; }
+    | postfix_expression '(' argument_expression_list ')'   
+        { $$ = $3; }
     | postfix_expression '.' IDENT
+        { //$$.ast = jacc_alloc_binop_node(&$2, $1.ast, $3.ast); }
+            jacc_yystype_t temp = $$;
+            jacc_yystype_t temp1 = $1;
+            jacc_yystype_t temp2 = $2;
+            jacc_yystype_t temp3 = $3;
+        }
     | postfix_expression INDSEL IDENT
     | postfix_expression PLUSPLUS
     | postfix_expression MINUSMINUS
@@ -212,7 +233,24 @@ expression
     ;
 
 statement
-    : expression ';'
+    : expression ';' 
+    {
+        ast = $1.ast;
+        printf("End of expression\n");
+        switch (ast->type) {
+            case (JACC_BINOP_NODE):
+                printf("BINOP\n");
+                break;
+            case (JACC_NUM_NODE):
+                printf("Token: %llu\n", ast->num.token.data.ulonglong_type);
+                break;
+            case (JACC_IDENT_NODE):
+                printf("Token: %s\n", ast->ident.token.data.string_literal);
+                break;
+            default:
+                break;
+        }
+    }
     ;
 
 %%
