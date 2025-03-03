@@ -13,7 +13,7 @@ int yylex(void);
 }
 
 %token <ast_p> IDENT
-%token <ast_p> CHARLIT        // `byte` (we don't support multibyte)
+%token <ast_p> CHARLIT        // byte (we don't support multibyte)
 %token <ast_p> STRING         // "<here>"
 %token <ast_p> NUMBER         // Numerical value - will be specified as INT, DOUBLE, ETC.
 %token <ast_p> INDSEL         // ->
@@ -76,29 +76,45 @@ int yylex(void);
 %token <ast_p> _COMPLEX       // _complex
 %token <ast_p> _IMAGINARY      // _imaginary
 
-//%start statement
-
 %type <ast_p> primary_expression
+%type <ast_p> postfix_expression
+%type <ast_p> argument_expression_list
+%type <ast_p> assignment_expression
+%type <ast_p> unary_expression
+%type <ast_p> unary_operator
+%type <ast_p> cast_expression
+%type <ast_p> multiplicative_expression
+%type <ast_p> additive_expression
+%type <ast_p> shift_expression
+%type <ast_p> relational_expression
+%type <ast_p> equality_expression
+%type <ast_p> and_expression
+%type <ast_p> exclusive_or_expression
+%type <ast_p> inclusive_or_expression
+%type <ast_p> logical_and_expression
+%type <ast_p> logical_or_expression
+%type <ast_p> conditional_expression
+%type <ast_p> expression
+%type <ast_p> statement
+
+%start statement
 
 %%
 
 primary_expression
     : IDENT     
-    | NUMBER    
-    | STRING    
-    | CHARLIT   
-    //| '(' IDENT ')' 
     | IDENT IDENT IDENT
-    {
-        jacc_ast_node_t *temp1 = $1;
-        jacc_ast_node_t *temp2 = $2;
-        jacc_ast_node_t *temp3 = $3;
-    }
+        {
+            jacc_ast_node_t *temp1 = $1;
+            jacc_ast_node_t *temp2 = $2;
+            jacc_ast_node_t *temp3 = $3;
+
+            $$ = $1;
+        }
     ;
 
-/*
 postfix_expression
-    : primary_expression
+    : primary_expression {$$ = $1;}
     | postfix_expression '[' expression ']'
     | postfix_expression '(' argument_expression_list ')'   
     | postfix_expression '.' IDENT
@@ -137,16 +153,16 @@ cast_expression
 //    | '(' type_name ')' cast_expression
     ;
 
-multiplicative_expressions
+multiplicative_expression
     : cast_expression
-    | multiplicative_expressions '*' cast_expression
-    | multiplicative_expressions '/' cast_expression
-    | multiplicative_expressions '%' cast_expression
+    | multiplicative_expression '*' cast_expression
+    | multiplicative_expression '/' cast_expression
+    | multiplicative_expression '%' cast_expression
 
 additive_expression
-    : multiplicative_expressions
-    | additive_expression '+' multiplicative_expressions { printf("PLEASE!\n"); }
-    | additive_expression '-' multiplicative_expressions
+    : multiplicative_expression
+    | additive_expression '+' multiplicative_expression
+    | additive_expression '-' multiplicative_expression
     ;
 
 shift_expression
@@ -226,7 +242,6 @@ expression
 statement
     : expression ';' 
     ;
-    */
 
 %%
 

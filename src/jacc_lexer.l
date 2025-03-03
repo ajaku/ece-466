@@ -34,66 +34,66 @@ NUM_EXTENSIONS              ((U|L|UL|LU|ULL|LUL|LLU)?)
 \[|\]                                       { LEX_SINGLE_TOK(yytext); }
 \{|\}                                       { LEX_SINGLE_TOK(yytext); }
 \(|\)                                       { LEX_SINGLE_TOK(yytext); }
-->                                          { LEX_MULTI_TOK(INDSEL); }
-\+\+                                        { LEX_MULTI_TOK(PLUSPLUS); }
---                                          { LEX_MULTI_TOK(MINUSMINUS); } 
-\<\<                                        { LEX_MULTI_TOK(SHL); }
->>                                          { LEX_MULTI_TOK(SHR); }
-\<=                                         { LEX_MULTI_TOK(LTEQ); }
->=                                          { LEX_MULTI_TOK(GTEQ); }
-==                                          { LEX_MULTI_TOK(EQEQ); }
-!=                                          { LEX_MULTI_TOK(NOTEQ); }
-&&                                          { LEX_MULTI_TOK(LOGAND); }
-\|\|                                        { LEX_MULTI_TOK(LOGOR); }
-\.\.\.                                      { LEX_MULTI_TOK(ELLIPSIS); }
-\*=                                         { LEX_MULTI_TOK(TIMESEQ); }
-\/=                                         { LEX_MULTI_TOK(DIVEQ); }
-\%=                                         { LEX_MULTI_TOK(MODEQ); }
-\+=                                         { LEX_MULTI_TOK(PLUSEQ); }
--=                                          { LEX_MULTI_TOK(MINUSEQ); }
-\<\<=                                       { LEX_MULTI_TOK(SHLEQ); }
->>=                                         { LEX_MULTI_TOK(SHREQ); }
-&=                                          { LEX_MULTI_TOK(ANDEQ); }
-\|=                                         { LEX_MULTI_TOK(OREQ); }
-\^=                                         { LEX_MULTI_TOK(XOREQ); }
+->                                          { LEX_MULTI_TOK(INDSEL, yytext); }
+\+\+                                        { LEX_MULTI_TOK(PLUSPLUS, yytext); }
+--                                          { LEX_MULTI_TOK(MINUSMINUS, yytext); } 
+\<\<                                        { LEX_MULTI_TOK(SHL, yytext); }
+>>                                          { LEX_MULTI_TOK(SHR, yytext); }
+\<=                                         { LEX_MULTI_TOK(LTEQ, yytext); }
+>=                                          { LEX_MULTI_TOK(GTEQ, yytext); }
+==                                          { LEX_MULTI_TOK(EQEQ, yytext); }
+!=                                          { LEX_MULTI_TOK(NOTEQ, yytext); }
+&&                                          { LEX_MULTI_TOK(LOGAND, yytext); }
+\|\|                                        { LEX_MULTI_TOK(LOGOR, yytext); }
+\.\.\.                                      { LEX_MULTI_TOK(ELLIPSIS, yytext); }
+\*=                                         { LEX_MULTI_TOK(TIMESEQ, yytext); }
+\/=                                         { LEX_MULTI_TOK(DIVEQ, yytext); }
+\%=                                         { LEX_MULTI_TOK(MODEQ, yytext); }
+\+=                                         { LEX_MULTI_TOK(PLUSEQ, yytext); }
+-=                                          { LEX_MULTI_TOK(MINUSEQ, yytext); }
+\<\<=                                       { LEX_MULTI_TOK(SHLEQ, yytext); }
+>>=                                         { LEX_MULTI_TOK(SHREQ, yytext); }
+&=                                          { LEX_MULTI_TOK(ANDEQ, yytext); }
+\|=                                         { LEX_MULTI_TOK(OREQ, yytext); }
+\^=                                         { LEX_MULTI_TOK(XOREQ, yytext); }
 
-auto                                        { LEX_MULTI_TOK(AUTO); }
-break                                       { LEX_MULTI_TOK(BREAK); }
-case                                        { LEX_MULTI_TOK(CASE); }
-char                                        { LEX_MULTI_TOK(CHAR); }
-const                                       { LEX_MULTI_TOK(CONST); }
-continue                                    { LEX_MULTI_TOK(CONTINUE); }
-default                                     { LEX_MULTI_TOK(DEFAULT); }
-do                                          { LEX_MULTI_TOK(DO); }
-double                                      { LEX_MULTI_TOK(DOUBLE); }
-else                                        { LEX_MULTI_TOK(ELSE); }
-enum                                        { LEX_MULTI_TOK(ENUM); }
-extern                                      { LEX_MULTI_TOK(EXTERN); }
-float                                       { LEX_MULTI_TOK(FLOAT); }
-for                                         { LEX_MULTI_TOK(FOR); }
-goto                                        { LEX_MULTI_TOK(GOTO); }
-if                                          { LEX_MULTI_TOK(IF); }
-inline                                      { LEX_MULTI_TOK(INLINE); }
-int                                         { LEX_MULTI_TOK(INT); }
-long                                        { LEX_MULTI_TOK(LONG); }
-register                                    { LEX_MULTI_TOK(REGISTER); }
-restrict                                    { LEX_MULTI_TOK(RESTRICT); }
-return                                      { LEX_MULTI_TOK(RETURN); }
-short                                       { LEX_MULTI_TOK(SHORT); }
-signed                                      { LEX_MULTI_TOK(SIGNED); }
-sizeof                                      { LEX_MULTI_TOK(SIZEOF); }
-static                                      { LEX_MULTI_TOK(STATIC); }
-struct                                      { LEX_MULTI_TOK(STRUCT); }
-switch                                      { LEX_MULTI_TOK(SWITCH); }
-typedef                                     { LEX_MULTI_TOK(TYPEDEF); }
-union                                       { LEX_MULTI_TOK(UNION); }
-unsigned                                    { LEX_MULTI_TOK(UNSIGNED); }
-void                                        { LEX_MULTI_TOK(VOID); }
-volatile                                    { LEX_MULTI_TOK(VOLATILE); }
-while                                       { LEX_MULTI_TOK(WHILE); }
-_Bool                                       { LEX_MULTI_TOK(_BOOL); }
-_Complex                                    { LEX_MULTI_TOK(_COMPLEX); }
-_Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
+auto                                        { LEX_MULTI_TOK(AUTO, yytext); }
+break                                       { LEX_MULTI_TOK(BREAK, yytext); }
+case                                        { LEX_MULTI_TOK(CASE, yytext); }
+char                                        { LEX_MULTI_TOK(CHAR, yytext); }
+const                                       { LEX_MULTI_TOK(CONST, yytext); }
+continue                                    { LEX_MULTI_TOK(CONTINUE, yytext); }
+default                                     { LEX_MULTI_TOK(DEFAULT, yytext); }
+do                                          { LEX_MULTI_TOK(DO, yytext); }
+double                                      { LEX_MULTI_TOK(DOUBLE, yytext); }
+else                                        { LEX_MULTI_TOK(ELSE, yytext); }
+enum                                        { LEX_MULTI_TOK(ENUM, yytext); }
+extern                                      { LEX_MULTI_TOK(EXTERN, yytext); }
+float                                       { LEX_MULTI_TOK(FLOAT, yytext); }
+for                                         { LEX_MULTI_TOK(FOR, yytext); }
+goto                                        { LEX_MULTI_TOK(GOTO, yytext); }
+if                                          { LEX_MULTI_TOK(IF, yytext); }
+inline                                      { LEX_MULTI_TOK(INLINE, yytext); }
+int                                         { LEX_MULTI_TOK(INT, yytext); }
+long                                        { LEX_MULTI_TOK(LONG, yytext); }
+register                                    { LEX_MULTI_TOK(REGISTER, yytext); }
+restrict                                    { LEX_MULTI_TOK(RESTRICT, yytext); }
+return                                      { LEX_MULTI_TOK(RETURN, yytext); }
+short                                       { LEX_MULTI_TOK(SHORT, yytext); }
+signed                                      { LEX_MULTI_TOK(SIGNED, yytext); }
+sizeof                                      { LEX_MULTI_TOK(SIZEOF, yytext); }
+static                                      { LEX_MULTI_TOK(STATIC, yytext); }
+struct                                      { LEX_MULTI_TOK(STRUCT, yytext); }
+switch                                      { LEX_MULTI_TOK(SWITCH, yytext); }
+typedef                                     { LEX_MULTI_TOK(TYPEDEF, yytext); }
+union                                       { LEX_MULTI_TOK(UNION, yytext); }
+unsigned                                    { LEX_MULTI_TOK(UNSIGNED, yytext); }
+void                                        { LEX_MULTI_TOK(VOID, yytext); }
+volatile                                    { LEX_MULTI_TOK(VOLATILE, yytext); }
+while                                       { LEX_MULTI_TOK(WHILE, yytext); }
+_Bool                                       { LEX_MULTI_TOK(_BOOL, yytext); }
+_Complex                                    { LEX_MULTI_TOK(_COMPLEX, yytext); }
+_Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY, yytext); }
 
 (0[0-7]*){NUM_EXTENSIONS}                   { 
                                                 lex_alloc_yylval(&yylval);
