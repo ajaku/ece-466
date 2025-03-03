@@ -207,7 +207,7 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
 [_A-Za-z]+[_A-Za-z0-9]*                     { 
                                                 lex_alloc_yylval(&yylval);
                                                 yylval.ast_p->lex_tok.data_type = JACC_TYPE_STRING;
-                                                yylval.ast_p->lex_tok.data.string_d = yytext;
+                                                yylval.ast_p->lex_tok.data.string_d = strdup(yytext);
                                                 yylval.ast_p->lex_tok.size = strlen(yytext) + 1;
 
                                                 return IDENT;

@@ -18,31 +18,25 @@ typedef enum jacc_data_type {
 } jacc_data_type_t;
 
 typedef union jacc_stored_data {
-  char char_literal;
-  char *string_literal;
+    char char_d;
+    char *string_d;
 
-  /* Integer Numbers */
-  int int_type;
-  unsigned int uint_type;
-  long long_type;
-  unsigned long ulong_type;
-  unsigned long long ulonglong_type;
+    /* Integer Numbers */
+    int int_d;
+    unsigned int uint_d;
+    long long_d;
+    unsigned long ulong_d;
+    unsigned long long ulonglong_d;
 
-  // Not supported ATM
-  /* Real Numbers */
-  float float_type;
-  double double_type;
-  long double ldouble_type;
-
+    // Not supported ATM
+    /* Real Numbers */
+    float float_d;
+    double double_d;
+    long double ldouble_d;
 } jacc_stored_data_t;
 
-typedef struct jacc_yystruct {
-  jacc_data_type_t type;
-  jacc_stored_data_t data;
-  size_t size;
-} jacc_yystruct_t;
-
-typedef union jacc_yystype {
-  jacc_yystruct_t token;
-  struct jacc_ast_node *ast;
-} jacc_yystype_t;
+typedef struct jacc_lex_tok {
+    jacc_data_type_t data_type;
+    size_t size;
+    jacc_stored_data_t data;
+} jacc_lex_tok_t;
