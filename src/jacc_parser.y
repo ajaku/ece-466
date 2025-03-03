@@ -6,111 +6,102 @@
 void yyerror(const char * s);
 int yylex(void);
 
-jacc_ast_node_t *ast;
-
 %}
 
-%define api.value.type { jacc_yystype_t }
+%union {
+    struct jacc_ast_node *ast_p;
+}
 
-%token IDENT
-%token CHARLIT        // `byte` (we don't support multibyte)
-%token STRING         // "<here>"
-%token NUMBER         // Numerical value - will be specified as INT, DOUBLE, ETC.
-%token INDSEL         // ->
-%token PLUSPLUS       // ++
-%token MINUSMINUS     // --
-%token SHL            // <<
-%token SHR            // >>
-%token LTEQ           // <=
-%token GTEQ           // >=
-%token EQEQ           // ==
-%token NOTEQ          // !=
-%token LOGAND         // &&
-%token LOGOR          // ||
-%token ELLIPSIS       // ...
-%token TIMESEQ        // *=
-%token DIVEQ          // /=
-%token MODEQ          // %=
-%token PLUSEQ         // +=
-%token MINUSEQ        // -=
-%token SHLEQ          // <<=
-%token SHREQ          // >>=
-%token ANDEQ          // &=
-%token OREQ           // |=
-%token XOREQ          // ^=
-%token AUTO           // auto
-%token BREAK          // break
-%token CASE           // case
-%token CHAR           // char
-%token CONST          // const
-%token CONTINUE       // continue
-%token DEFAULT        // default
-%token DO             // do
-%token DOUBLE         // double
-%token ELSE           // else
-%token ENUM           // enum
-%token EXTERN         // extern
-%token FLOAT          // float
-%token FOR            // for
-%token GOTO           // goto
-%token IF             // if
-%token INLINE         // inline
-%token INT            // int
-%token LONG           // long
-%token REGISTER       // register
-%token RESTRICT       // restrict
-%token RETURN         // return
-%token SHORT          // short
-%token SIGNED         // signed
-%token SIZEOF         // sizeof
-%token STATIC         // static
-%token STRUCT         // struct
-%token SWITCH         // switch
-%token TYPEDEF        // typedef
-%token UNION          // union
-%token UNSIGNED       // unsigned
-%token VOID           // void
-%token VOLATILE       // volatile
-%token WHILE          // while
-%token _BOOL          // _bool
-%token _COMPLEX       // _complex
-%token _IMAGINARY      // _imaginary
+%token <ast_p> IDENT
+%token <ast_p> CHARLIT        // `byte` (we don't support multibyte)
+%token <ast_p> STRING         // "<here>"
+%token <ast_p> NUMBER         // Numerical value - will be specified as INT, DOUBLE, ETC.
+%token <ast_p> INDSEL         // ->
+%token <ast_p> PLUSPLUS       // ++
+%token <ast_p> MINUSMINUS     // --
+%token <ast_p> SHL            // <<
+%token <ast_p> SHR            // >>
+%token <ast_p> LTEQ           // <=
+%token <ast_p> GTEQ           // >=
+%token <ast_p> EQEQ           // ==
+%token <ast_p> NOTEQ          // !=
+%token <ast_p> LOGAND         // &&
+%token <ast_p> LOGOR          // ||
+%token <ast_p> ELLIPSIS       // ...
+%token <ast_p> TIMESEQ        // *=
+%token <ast_p> DIVEQ          // /=
+%token <ast_p> MODEQ          // %=
+%token <ast_p> PLUSEQ         // +=
+%token <ast_p> MINUSEQ        // -=
+%token <ast_p> SHLEQ          // <<=
+%token <ast_p> SHREQ          // >>=
+%token <ast_p> ANDEQ          // &=
+%token <ast_p> OREQ           // |=
+%token <ast_p> XOREQ          // ^=
+%token <ast_p> AUTO           // auto
+%token <ast_p> BREAK          // break
+%token <ast_p> CASE           // case
+%token <ast_p> CHAR           // char
+%token <ast_p> CONST          // const
+%token <ast_p> CONTINUE       // continue
+%token <ast_p> DEFAULT        // default
+%token <ast_p> DO             // do
+%token <ast_p> DOUBLE         // double
+%token <ast_p> ELSE           // else
+%token <ast_p> ENUM           // enum
+%token <ast_p> EXTERN         // extern
+%token <ast_p> FLOAT          // float
+%token <ast_p> FOR            // for
+%token <ast_p> GOTO           // goto
+%token <ast_p> IF             // if
+%token <ast_p> INLINE         // inline
+%token <ast_p> INT            // int
+%token <ast_p> LONG           // long
+%token <ast_p> REGISTER       // register
+%token <ast_p> RESTRICT       // restrict
+%token <ast_p> RETURN         // return
+%token <ast_p> SHORT          // short
+%token <ast_p> SIGNED         // signed
+%token <ast_p> SIZEOF         // sizeof
+%token <ast_p> STATIC         // static
+%token <ast_p> STRUCT         // struct
+%token <ast_p> SWITCH         // switch
+%token <ast_p> TYPEDEF        // typedef
+%token <ast_p> UNION          // union
+%token <ast_p> UNSIGNED       // unsigned
+%token <ast_p> VOID           // void
+%token <ast_p> VOLATILE       // volatile
+%token <ast_p> WHILE          // while
+%token <ast_p> _BOOL          // _bool
+%token <ast_p> _COMPLEX       // _complex
+%token <ast_p> _IMAGINARY      // _imaginary
 
-%start statement
+//%start statement
+
+%type <ast_p> primary_expression
 
 %%
 
 primary_expression
     : IDENT     
-        { $$.ast = jacc_alloc_ident_node(&$$);  }
     | NUMBER    
-        { $$.ast = jacc_alloc_num_node(&$$);    }
     | STRING    
-        { $$.ast = jacc_alloc_ident_node(&$$);  }
     | CHARLIT   
-        { $$.ast = jacc_alloc_ident_node(&$$);  }
-    | '(' expression ')' 
-        { 
-            jacc_yystype_t temp = $$;
-            jacc_yystype_t temp1 = $1;
-            jacc_yystype_t temp2 = $2;
-            $$ = $2;
-        }
+    //| '(' IDENT ')' 
+    | IDENT IDENT IDENT
+    {
+        jacc_ast_node_t *temp1 = $1;
+        jacc_ast_node_t *temp2 = $2;
+        jacc_ast_node_t *temp3 = $3;
+    }
     ;
 
+/*
 postfix_expression
     : primary_expression
     | postfix_expression '[' expression ']'
-        {$$ = $3; }
     | postfix_expression '(' argument_expression_list ')'   
-        { $$ = $3; }
     | postfix_expression '.' IDENT
-        { //$$.ast = jacc_alloc_binop_node(&$2, $1.ast, $3.ast); }
-            jacc_yystype_t temp = $$;
-            jacc_yystype_t temp1 = $1;
-            jacc_yystype_t temp2 = $2;
-            jacc_yystype_t temp3 = $3;
-        }
     | postfix_expression INDSEL IDENT
     | postfix_expression PLUSPLUS
     | postfix_expression MINUSMINUS
@@ -234,24 +225,8 @@ expression
 
 statement
     : expression ';' 
-    {
-        ast = $1.ast;
-        printf("End of expression\n");
-        switch (ast->type) {
-            case (JACC_BINOP_NODE):
-                printf("BINOP\n");
-                break;
-            case (JACC_NUM_NODE):
-                printf("Token: %llu\n", ast->num.token.data.ulonglong_type);
-                break;
-            case (JACC_IDENT_NODE):
-                printf("Token: %s\n", ast->ident.token.data.string_literal);
-                break;
-            default:
-                break;
-        }
-    }
     ;
+    */
 
 %%
 
