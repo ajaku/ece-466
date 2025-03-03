@@ -5,12 +5,11 @@
 #include <stdlib.h>
 #include <limits.h>
 #include "lex.h"
+#include "ast.h"
 
 int line_ct;
 char *filename = NULL;
 char *str = NULL;
-
-// YYSTYPE yylval;
 
 %}
 
@@ -97,33 +96,42 @@ _Complex                                    { LEX_MULTI_TOK(_COMPLEX); }
 _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
 
 (0[0-7]*){NUM_EXTENSIONS}                   { 
-                                                return lex_handle_integers(yytext, &yylval);
+                                                lex_alloc_yylval(&yylval);
+                                                return lex_handle_integers(yytext, &(yylval.ast_p->lex_tok));
                                             }
 ([1-9][0-9]*){NUM_EXTENSIONS}               { 
-                                                return lex_handle_integers(yytext, &yylval);
+                                                lex_alloc_yylval(&yylval);
+                                                return lex_handle_integers(yytext, &(yylval.ast_p->lex_tok));
                                             }
 (0[xX][0-9a-fA-F]+){NUM_EXTENSIONS}         { 
-                                                return lex_handle_integers(yytext, &yylval);
+                                                lex_alloc_yylval(&yylval);
+                                                return lex_handle_integers(yytext, &(yylval.ast_p->lex_tok));
                                             }
-(L\')|(\')                                  { BEGIN(CHAR_TOK); }
+(L\')|(\')                                  { 
+                                                BEGIN(CHAR_TOK); 
+                                                lex_alloc_yylval(&yylval);
+                                            }
 <CHAR_TOK>\\[0abfnrtv\'\"\\]'               { 
-                                                yylval.token.type = JACC_TYPE_CHAR_ESC;
-                                                yylval.token.data.char_literal = lex_handle_esc_char(yytext + 1);
-                                                yylval.token.size = 1;
+                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_CHAR_ESC;
+                                                yylval.ast_p->lex_tok.data.char_d = lex_handle_esc_char(yytext + 1);
+                                                yylval.ast_p->lex_tok.size = 1;
+
                                                 BEGIN(INITIAL);
                                                 return CHARLIT;
                                             }
 <CHAR_TOK>[^\\]'                            { 
-                                                yylval.token.type = JACC_TYPE_CHARLIT;
-                                                yylval.token.data.char_literal = yytext[0];
-                                                yylval.token.size = 1;
+                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_CHAR_ESC;
+                                                yylval.ast_p->lex_tok.data.char_d = yytext[0];
+                                                yylval.ast_p->lex_tok.size = 1;
+
                                                 BEGIN(INITIAL);
                                                 return CHARLIT;
                                             }
 <CHAR_TOK>[^\\][^']+                        { 
-                                                yylval.token.type = JACC_TYPE_CHARLIT;
-                                                yylval.token.data.char_literal = yytext[0];
-                                                yylval.token.size = 1;
+                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_CHAR_ESC;
+                                                yylval.ast_p->lex_tok.data.char_d = yytext[0];
+                                                yylval.ast_p->lex_tok.size = 1;
+
                                                 fprintf(stderr, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, line_ct);
                                                 BEGIN(MULTIBYTE);
                                                 return CHARLIT;
@@ -135,9 +143,11 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
 <CHAR_TOK>\\[0abfnrtv\'\"\\][^']+           { 
                                                 char *temp = (char *)malloc(sizeof(char *));
                                                 temp[0] = yytext[1];
-                                                yylval.token.type = JACC_TYPE_CHAR_ESC;
-                                                yylval.token.data.char_literal = lex_handle_esc_char(temp);
-                                                yylval.token.size = 1;
+
+                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_CHAR_ESC;
+                                                yylval.ast_p->lex_tok.data.char_d = lex_handle_esc_char(temp);
+                                                yylval.ast_p->lex_tok.size = 1;
+
                                                 free(temp);
                                                 fprintf(stderr, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, line_ct);
                                                 BEGIN(MULTIBYTE);
@@ -147,13 +157,16 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
 
 (L\")|(\")                                  {  
                                                 BEGIN(STR_TOK);
-                                                yylval.token.size = 0;
-                                                yylval.token.type = JACC_TYPE_STRING;
-                                                yylval.token.data.string_literal = (char *)malloc(sizeof(char *));
+                                                lex_alloc_yylval(&yylval);
+
+                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_STRING;
+                                                yylval.ast_p->lex_tok.data.string_d = (char *)malloc(sizeof(char *));
+                                                yylval.ast_p->lex_tok.size = 0;
+
                                             }
 <STR_TOK>\\[0abfnrtv\'\"\\\?]               {
                                                 char char_to_app = lex_handle_esc_str(yytext);
-                                                lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, char_to_app);                                                   
+                                                lex_append_char(&(yylval.ast_p->lex_tok.size), &(yylval.ast_p->lex_tok.data.string_d), char_to_app);                                                   
                                             }
 <STR_TOK>\\[xX][0-9a-fA-F]+                 { 
                                                 unsigned int hex_val = 0;
@@ -164,7 +177,7 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                                     fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
                                                 }
 
-                                                lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, (char)hex_val);
+                                                lex_append_char(&(yylval.ast_p->lex_tok.size), &(yylval.ast_p->lex_tok.data.string_d), (char)hex_val);                                                   
                                             }
 <STR_TOK>\\[0-7]{1,3}                       { 
                                                 unsigned int hex_val = 0;
@@ -175,10 +188,10 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                                     fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
                                                 }
 
-                                                lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, (char)hex_val);
+                                                lex_append_char(&(yylval.ast_p->lex_tok.size), &(yylval.ast_p->lex_tok.data.string_d), (char)hex_val);                                                   
                                             }
 <STR_TOK>\"                                 { 
-                                                lex_append_char(&yylval.token.size, &yylval.token.data.string_literal, '\0');                                                   
+                                                lex_append_char(&(yylval.ast_p->lex_tok.size), &(yylval.ast_p->lex_tok.data.string_d), '\0');                                                   
                                                 BEGIN(INITIAL);
                                                 return STRING;
                                             }
@@ -187,157 +200,17 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY); }
                                                 return 0;
                                             }
 <STR_TOK>.                                  { 
-                                                lex_append_str(&yylval.token.size, &yylval.token.data.string_literal, &yytext);
+                                                lex_append_str(&(yylval.ast_p->lex_tok.size), &(yylval.ast_p->lex_tok.data.string_d), &yytext);                                                   
                                             }
 
 
 [_A-Za-z]+[_A-Za-z0-9]*                     { 
-                                                yylval.token.type = JACC_TYPE_STRING;
-                                                yylval.token.data.string_literal = yytext;
-                                                yylval.token.size = strlen(yytext) + 1;
-                                                return IDENT; }
-.                                           { ; /*fprintf(stderr, "%s:%d:Error:Uncrecognized term %s\n", filename, line_ct, yytext);*/ }
+                                                lex_alloc_yylval(&yylval);
+                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_STRING;
+                                                yylval.ast_p->lex_tok.data.string_d = yytext;
+                                                yylval.ast_p->lex_tok.size = strlen(yytext) + 1;
+
+                                                return IDENT;
+                                            }
+.                                           {  }
 %%
-
-/*
-int main (int argc, char **argv) {
-    ++argv, --argc;
-
-    if( argc > 0) {
-        yyin = fopen(argv[0], "r");
-    } else {
-        yyin = stdin;
-    }
-
-    int  t;
-    while (t = yylex()) {
-        switch (t) {
-            case TOKEOF:
-                break;
-
-            case IDENT:
-                printf("%s\t%d\tIDENT\t%s\n", filename, line_ct, yylval.token.data.string_literal); 
-                break;
-
-            case CHARLIT:
-                if (yylval.token.type == JACC_TYPE_CHAR_ESC) {
-                    char *esc_seq = lex_return_str_esc(yylval.token.data.char_literal);
-                    printf("%s %d\tCHARLIT\t%s\n", filename, line_ct, esc_seq); 
-                }
-
-                if (yylval.token.type == JACC_TYPE_CHARLIT) {
-                    printf("%s %d\tCHARLIT\t%c\n", filename, line_ct, yylval.token.data.char_literal); 
-                }
-                break;
-
-            case STRING:
-                printf("%s\t%d\tSTRING\t", filename, line_ct); 
-                char *targ_str = yylval.token.data.string_literal;
-                int i = 0;
-                // -1 because we dont want to print the null terminating byte
-                while (i < yylval.token.size - 1) {
-                    char* esc_char = lex_return_str_esc(targ_str[i]); 
-                    if (esc_char != NULL) {
-                        printf("%s", esc_char);
-                    } else if ((unsigned char)targ_str[i] <= 31 || (unsigned char)targ_str[i] >= 127) {
-                        printf("\\%03o", (unsigned char) targ_str[i]);
-                    } else {
-                        printf("%c", targ_str[i]);
-                    }
-                    i++;
-                }
-                printf("\n");
-                break;
-
-            case NUMBER:
-                if (yylval.token.type == JACC_TYPE_INT) {
-                    printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tINT\n", filename, line_ct, yylval.token.data.int_type); 
-                }
-                if (yylval.token.type == JACC_TYPE_UINT) {
-                    printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tUNSIGNED, INT\n", filename, line_ct, yylval.token.data.uint_type); 
-                }
-                if (yylval.token.type == JACC_TYPE_LONG) {
-                    printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tLONG\n", filename, line_ct, yylval.token.data.long_type); 
-                }
-                if (yylval.token.type == JACC_TYPE_ULONG) {
-                    printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tUNSIGNED, LONG\n", filename, line_ct, yylval.token.data.ulong_type); 
-                }
-                if (yylval.token.type == JACC_TYPE_ULONGLONG) {
-                    printf("%s\t%d\tNUMBER\tINTEGER\t%lld\tUNSIGNED, LONGLONG\n", filename, line_ct, yylval.token.data.ulonglong_type); 
-                }
-                break;
-
-
-            // Case for single byte operator is handled within LEX_SINGLE_TOK
-
-            // Operators 
-            case INDSEL:
-            case PLUSPLUS:
-            case MINUSMINUS:
-            case SHL:
-            case SHR:
-            case LTEQ:
-            case GTEQ:
-            case EQEQ:
-            case NOTEQ:
-            case LOGAND:
-            case LOGOR:
-            case ELLIPSIS:
-            case TIMESEQ:
-            case DIVEQ:
-            case MODEQ:
-            case PLUSEQ:
-            case MINUSEQ:
-            case SHLEQ:
-            case SHREQ:
-            case ANDEQ:
-            case OREQ:
-            case XOREQ:
-
-            // Keywords
-            case AUTO:
-            case BREAK:
-            case CASE:
-            case CHAR:
-            case CONST:
-            case CONTINUE:
-            case DEFAULT:
-            case DO:
-            case DOUBLE:
-            case ELSE:
-            case ENUM:
-            case EXTERN:
-            case FLOAT:
-            case FOR:
-            case GOTO:
-            case IF:
-            case INLINE:
-            case INT:
-            case LONG:
-            case REGISTER:
-            case RESTRICT:
-            case RETURN:
-            case SHORT:
-            case SIGNED:
-            case SIZEOF:
-            case STATIC:
-            case STRUCT:
-            case SWITCH:
-            case TYPEDEF:
-            case UNION:
-            case UNSIGNED:
-            case VOID:
-            case VOLATILE:
-            case WHILE:
-            case _BOOL:
-            case _COMPLEX:
-            case _IMAGINARY:
-                printf("%s\t%d\t%s\n", filename, line_ct, string_tokens[STRING_TOK_IDX(t)]);
-                break;
-
-            default:
-                break;
-        }
-    }
-}
-*/

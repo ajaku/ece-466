@@ -1,6 +1,7 @@
 #include "ast.h"
 #include "types.h"
 
+/*
 jacc_ast_node_t* jacc_alloc_binop_node(union jacc_yystype *yytok, jacc_ast_node_t *left, jacc_ast_node_t *right) {
     jacc_ast_node_t* node = malloc(sizeof(jacc_ast_node_t));
     if (node == NULL) {
@@ -39,3 +40,4 @@ jacc_ast_node_t* jacc_alloc_ident_node(union jacc_yystype *yytok) {
 
     return node;
 }
+*/

@@ -69,6 +69,15 @@ const char *string_tokens[] = {
 	"_IMAGINARY"      // _imaginary
 };
 
+void lex_alloc_yylval(YYSTYPE *val) {
+    val->ast_p = malloc(sizeof(jacc_ast_node_t));
+
+    if (!val->ast_p) {
+        fprintf(stderr, "Failed to allocate yylval\n");
+        exit(1);
+    }
+}
+
 int lex_append_str(size_t *size, char **a, char **b) {
     *size += strlen(*b);
     *a = realloc(*a, *size + 1);
@@ -139,31 +148,31 @@ char *lex_return_str_esc(char esc) {
     return NULL;
 }
 
-int lex_handle_integers(char *yytext, jacc_yystype_t *token) {
+int lex_handle_integers(char *yytext, jacc_lex_tok_t *token) {
     char *endptr;
     unsigned long long val = strtoull(yytext, &endptr, 0);
 
     if (*endptr == '\0') {
-        token->token.type = JACC_TYPE_INT;
-        token->token.data.int_type = (int)val;
+        token->data_type = JACC_TYPE_INT;
+        token->data.int_d = (int)val;
         return NUMBER;
     }
 
     if (strcmp(endptr, "U") == 0) {
-        token->token.type = JACC_TYPE_UINT;
-        token->token.data.uint_type = (unsigned int)val;
+        token->data_type = JACC_TYPE_UINT;
+        token->data.uint_d = (unsigned int)val;
         return NUMBER;
     }
 
     if (strcmp(endptr, "L") == 0) {
-        token->token.type = JACC_TYPE_LONG;
-        token->token.data.long_type = (long)val;
+        token->data_type = JACC_TYPE_LONG;
+        token->data.long_d = (long)val;
         return NUMBER;
     }
 
     if (strcmp(endptr, "UL") == 0 || strcmp(endptr, "LU") == 0) {
-        token->token.type = JACC_TYPE_ULONG;
-        token->token.data.ulong_type = (unsigned long)val;
+        token->data_type = JACC_TYPE_ULONG;
+        token->data.ulong_d = (unsigned long)val;
         return NUMBER;
     }
 
@@ -171,8 +180,8 @@ int lex_handle_integers(char *yytext, jacc_yystype_t *token) {
         strcmp(endptr, "LUL") == 0 ||
         strcmp(endptr, "LLU") == 0   ) {
 
-        token->token.type = JACC_TYPE_ULONGLONG;
-        token->token.data.ulonglong_type = val;
+        token->data_type = JACC_TYPE_ULONGLONG;
+        token->data.ulonglong_d = val;
         return NUMBER;
     }
     return NUMBER;

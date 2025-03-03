@@ -17,15 +17,17 @@ typedef struct jacc_ast_binop {
 } jacc_ast_binop_t;
 
 typedef struct jacc_ast_num {
-   struct jacc_yystruct token;
+   int val;
 } jacc_ast_num_t;
 
 typedef struct jacc_ast_ident {
-    struct jacc_yystruct token;
+    char *val;
 } jacc_ast_ident_t;
 
 typedef struct jacc_ast_node {
-    int type;
+    int ast_type;
+
+    struct jacc_lex_tok lex_tok;
 
     union {
         jacc_ast_binop_t binop;    
@@ -35,6 +37,8 @@ typedef struct jacc_ast_node {
 
 } jacc_ast_node_t;
 
+/*
 jacc_ast_node_t* jacc_alloc_binop_node(union jacc_yystype *yytok, jacc_ast_node_t *left, jacc_ast_node_t *right);
 jacc_ast_node_t* jacc_alloc_num_node(union jacc_yystype *yytok);
 jacc_ast_node_t* jacc_alloc_ident_node(union jacc_yystype *yytok);
+*/
