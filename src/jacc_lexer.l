@@ -96,41 +96,37 @@ _Complex                                    { LEX_MULTI_TOK(_COMPLEX, yytext); }
 _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY, yytext); }
 
 (0[0-7]*){NUM_EXTENSIONS}                   { 
-                                                lex_alloc_yylval(&yylval);
-                                                return lex_handle_integers(yytext, &(yylval.ast_p->lex_tok));
+                                                return lex_handle_integers(yytext, &(yylval.tok));
                                             }
 ([1-9][0-9]*){NUM_EXTENSIONS}               { 
-                                                lex_alloc_yylval(&yylval);
-                                                return lex_handle_integers(yytext, &(yylval.ast_p->lex_tok));
+                                                return lex_handle_integers(yytext, &(yylval.tok));
                                             }
 (0[xX][0-9a-fA-F]+){NUM_EXTENSIONS}         { 
-                                                lex_alloc_yylval(&yylval);
-                                                return lex_handle_integers(yytext, &(yylval.ast_p->lex_tok));
+                                                return lex_handle_integers(yytext, &(yylval.tok));
                                             }
 (L\')|(\')                                  { 
                                                 BEGIN(CHAR_TOK); 
-                                                lex_alloc_yylval(&yylval);
                                             }
 <CHAR_TOK>\\[0abfnrtv\'\"\\]'               { 
-                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_CHAR_ESC;
-                                                yylval.ast_p->lex_tok.data.char_d = lex_handle_esc_char(yytext + 1);
-                                                yylval.ast_p->lex_tok.size = 1;
+                                                yylval.tok.data_type = JACC_TYPE_CHAR_ESC;
+                                                yylval.tok.data.char_d = lex_handle_esc_char(yytext + 1);
+                                                yylval.tok.size = 1;
 
                                                 BEGIN(INITIAL);
                                                 return CHARLIT;
                                             }
 <CHAR_TOK>[^\\]'                            { 
-                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_CHAR_ESC;
-                                                yylval.ast_p->lex_tok.data.char_d = yytext[0];
-                                                yylval.ast_p->lex_tok.size = 1;
+                                                yylval.tok.data_type = JACC_TYPE_CHAR_ESC;
+                                                yylval.tok.data.char_d = yytext[0];
+                                                yylval.tok.size = 1;
 
                                                 BEGIN(INITIAL);
                                                 return CHARLIT;
                                             }
 <CHAR_TOK>[^\\][^']+                        { 
-                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_CHAR_ESC;
-                                                yylval.ast_p->lex_tok.data.char_d = yytext[0];
-                                                yylval.ast_p->lex_tok.size = 1;
+                                                yylval.tok.data_type = JACC_TYPE_CHAR_ESC;
+                                                yylval.tok.data.char_d = yytext[0];
+                                                yylval.tok.size = 1;
 
                                                 fprintf(stderr, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, line_ct);
                                                 BEGIN(MULTIBYTE);
@@ -144,9 +140,9 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY, yytext);
                                                 char *temp = (char *)malloc(sizeof(char *));
                                                 temp[0] = yytext[1];
 
-                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_CHAR_ESC;
-                                                yylval.ast_p->lex_tok.data.char_d = lex_handle_esc_char(temp);
-                                                yylval.ast_p->lex_tok.size = 1;
+                                                yylval.tok.data_type = JACC_TYPE_CHAR_ESC;
+                                                yylval.tok.data.char_d = lex_handle_esc_char(temp);
+                                                yylval.tok.size = 1;
 
                                                 free(temp);
                                                 fprintf(stderr, "%s:%d:Warning:Unsupported multibyte character literal truncated to first byte\n", filename, line_ct);
@@ -157,16 +153,14 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY, yytext);
 
 (L\")|(\")                                  {  
                                                 BEGIN(STR_TOK);
-                                                lex_alloc_yylval(&yylval);
-
-                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_STRING;
-                                                yylval.ast_p->lex_tok.data.string_d = (char *)malloc(sizeof(char *));
-                                                yylval.ast_p->lex_tok.size = 0;
+                                                yylval.tok.data_type = JACC_TYPE_STRING;
+                                                yylval.tok.data.string_d = (char *)malloc(sizeof(char *));
+                                                yylval.tok.size = 0;
 
                                             }
 <STR_TOK>\\[0abfnrtv\'\"\\\?]               {
                                                 char char_to_app = lex_handle_esc_str(yytext);
-                                                lex_append_char(&(yylval.ast_p->lex_tok.size), &(yylval.ast_p->lex_tok.data.string_d), char_to_app);                                                   
+                                                lex_append_char(&(yylval.tok.size), &(yylval.tok.data.string_d), char_to_app);                                                   
                                             }
 <STR_TOK>\\[xX][0-9a-fA-F]+                 { 
                                                 unsigned int hex_val = 0;
@@ -177,7 +171,7 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY, yytext);
                                                     fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
                                                 }
 
-                                                lex_append_char(&(yylval.ast_p->lex_tok.size), &(yylval.ast_p->lex_tok.data.string_d), (char)hex_val);                                                   
+                                                lex_append_char(&(yylval.tok.size), &(yylval.tok.data.string_d), (char)hex_val);                                                   
                                             }
 <STR_TOK>\\[0-7]{1,3}                       { 
                                                 unsigned int hex_val = 0;
@@ -188,10 +182,10 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY, yytext);
                                                     fprintf(stderr, "%s:%d:Warning:Hex escape sequence %s out of range\n", filename, line_ct, yytext);
                                                 }
 
-                                                lex_append_char(&(yylval.ast_p->lex_tok.size), &(yylval.ast_p->lex_tok.data.string_d), (char)hex_val);                                                   
+                                                lex_append_char(&(yylval.tok.size), &(yylval.tok.data.string_d), (char)hex_val);                                                   
                                             }
 <STR_TOK>\"                                 { 
-                                                lex_append_char(&(yylval.ast_p->lex_tok.size), &(yylval.ast_p->lex_tok.data.string_d), '\0');                                                   
+                                                lex_append_char(&(yylval.tok.size), &(yylval.tok.data.string_d), '\0');                                                   
                                                 BEGIN(INITIAL);
                                                 return STRING;
                                             }
@@ -200,15 +194,14 @@ _Imaginary                                  { LEX_MULTI_TOK(_IMAGINARY, yytext);
                                                 return 0;
                                             }
 <STR_TOK>.                                  { 
-                                                lex_append_str(&(yylval.ast_p->lex_tok.size), &(yylval.ast_p->lex_tok.data.string_d), &yytext);                                                   
+                                                lex_append_str(&(yylval.tok.size), &(yylval.tok.data.string_d), &yytext);                                                   
                                             }
 
 
 [_A-Za-z]+[_A-Za-z0-9]*                     { 
-                                                lex_alloc_yylval(&yylval);
-                                                yylval.ast_p->lex_tok.data_type = JACC_TYPE_STRING;
-                                                yylval.ast_p->lex_tok.data.string_d = strdup(yytext);
-                                                yylval.ast_p->lex_tok.size = strlen(yytext) + 1;
+                                                yylval.tok.data_type = JACC_TYPE_STRING;
+                                                yylval.tok.data.string_d = strdup(yytext);
+                                                yylval.tok.size = strlen(yytext) + 1;
 
                                                 return IDENT;
                                             }

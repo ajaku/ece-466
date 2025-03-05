@@ -13,19 +13,16 @@
 
 extern const char *string_tokens[];
 
-#define LEX_SINGLE_TOK(YYTEXT)                              \
-    lex_alloc_yylval(&yylval);                              \
-    yylval.ast_p->lex_tok.data_type = JACC_TYPE_STRING;     \
-    yylval.ast_p->lex_tok.data.string_d = strdup(YYTEXT);   \
+#define LEX_SINGLE_TOK(YYTEXT)                      \
+    yylval.tok.data_type = JACC_TYPE_STRING;    \
+    yylval.tok.data.string_d = strdup(YYTEXT);  \
     return (int)(*YYTEXT);
 
-#define LEX_MULTI_TOK(OP, YYTEXT)                           \
-    lex_alloc_yylval(&yylval);                              \
-    yylval.ast_p->lex_tok.data_type = JACC_TYPE_STRING;     \
-    yylval.ast_p->lex_tok.data.string_d = strdup(YYTEXT);   \
+#define LEX_MULTI_TOK(OP, YYTEXT)                   \
+    yylval.tok.data_type = JACC_TYPE_STRING;    \
+    yylval.tok.data.string_d = strdup(YYTEXT);  \
     return OP;
 
-void lex_alloc_yylval(YYSTYPE *val);
 int lex_append_str(size_t *size, char **a, char **b);
 int lex_append_char(size_t *size, char **a, char b);
 int lex_handle_integers(char *yytext, jacc_lex_tok_t *token);

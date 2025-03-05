@@ -69,15 +69,6 @@ const char *string_tokens[] = {
 	"_IMAGINARY"      // _imaginary
 };
 
-void lex_alloc_yylval(YYSTYPE *val) {
-    val->ast_p = malloc(sizeof(jacc_ast_node_t));
-
-    if (!val->ast_p) {
-        fprintf(stderr, "Failed to allocate yylval\n");
-        exit(1);
-    }
-}
-
 int lex_append_str(size_t *size, char **a, char **b) {
     *size += strlen(*b);
     *a = realloc(*a, *size + 1);
