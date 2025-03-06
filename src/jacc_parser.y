@@ -8,6 +8,8 @@ int yylex(void);
 
 jacc_ast_node_t final_ast;
 
+jacc_ast_node_t *test_ast;
+
 %}
 
 %union {
@@ -25,6 +27,7 @@ jacc_ast_node_t final_ast;
 %token <tok> '-'
 %token <tok> '~'
 %token <tok> '!'
+%token <tok> ';'
 %token <tok> INDSEL         // ->
 %token <tok> PLUSPLUS       // ++
 %token <tok> MINUSMINUS     // --
@@ -115,47 +118,55 @@ jacc_ast_node_t final_ast;
 
 primary_expression
     : IDENT {
-        $$ = jacc_alloc_base_node(JACC_IDENT_AST, &$1);
+        $$ = jacc_alloc_base_node(JACC_IDENT_AST, $1);
+        jacc_ast_node_t *temp = $$;
+        printf("IDENT\n");
     }   
     | NUMBER {
-        $$ = jacc_alloc_base_node(JACC_NUM_AST, &$1);
+        $$ = jacc_alloc_base_node(JACC_NUM_AST, $1);
+        jacc_ast_node_t *temp = $$;
+        printf("NUMBER\n");
     }
     | STRING {
-        $$ = jacc_alloc_base_node(JACC_STRING_AST, &$1);
+        $$ = jacc_alloc_base_node(JACC_STRING_AST, $1);
     }
     | CHARLIT {
-        $$ = jacc_alloc_base_node(JACC_STRING_AST, &$1);
+        $$ = jacc_alloc_base_node(JACC_CHAR_AST, $1);
     }
     | '(' expression ')' { $$ = $2; }
     ;
 
 postfix_expression
-    : primary_expression
+    : primary_expression { 
+        jacc_ast_node_t *temp = $$;
+        $$ = $1;
+        printf("primary_exp\n");
+    }
     | postfix_expression '[' expression ']' {
         jacc_ast_node_t *binop_ast = jacc_alloc_binop_node('+', $1, $3);
         $$ = jacc_alloc_generic_node(JACC_DEREF_AST, binop_ast, NULL);
-        jacc_ast_node_t *temp = $$;
-        printf("Hi\n");
     } 
     | postfix_expression '(' argument_expression_list ')' {
-        $$ = jacc_alloc_generic_node(JACC_FCALL_AST, $1, $3);
+        $$ = jacc_alloc_generic_node(JACC_FUNC_AST, $1, $3);
+        jacc_ast_node_t *temp = $3;
+        printf("hi\n");
     }
     | postfix_expression '.' IDENT {
-        jacc_ast_node_t *ident_ast = jacc_alloc_base_node(JACC_IDENT_AST, &$3);
+        jacc_ast_node_t *ident_ast = jacc_alloc_base_node(JACC_IDENT_AST, $3);
         $$ = jacc_alloc_generic_node(JACC_SEL_AST, $1, ident_ast);
     }
     | postfix_expression INDSEL IDENT {
-        jacc_ast_node_t *ident_ast = jacc_alloc_base_node(JACC_IDENT_AST, &$3);
+        jacc_ast_node_t *ident_ast = jacc_alloc_base_node(JACC_IDENT_AST, $3);
         jacc_ast_node_t *generic_ast = jacc_alloc_generic_node(JACC_DEREF_AST, $1, NULL);
-        $$ = jacc_alloc_generic_node(JACC_SEL_AST, generic_ast, ident_ast);
+        $$ = jacc_alloc_generic_node(JACC_INDIR_SEL_AST, generic_ast, ident_ast);
     }
     | postfix_expression PLUSPLUS {
 
-        jacc_ast_node_t *plus_plus_ast = jacc_alloc_base_node(JACC_NUM_AST, &$2);
+        jacc_ast_node_t *plus_plus_ast = jacc_alloc_base_node(JACC_NUM_AST, $2);
         $$ = jacc_alloc_generic_node(JACC_POST_OP_AST, $1, plus_plus_ast);
     }
     | postfix_expression MINUSMINUS {
-        jacc_ast_node_t *minus_minus_ast = jacc_alloc_base_node(JACC_NUM_AST, &$2);
+        jacc_ast_node_t *minus_minus_ast = jacc_alloc_base_node(JACC_NUM_AST, $2);
         $$ = jacc_alloc_generic_node(JACC_POST_OP_AST, $1, minus_minus_ast);
     }
     // '(' type_name ')' '{' initializer_list '}'
@@ -163,9 +174,17 @@ postfix_expression
     ;
 
 argument_expression_list
-    : assignment_expression
+    : assignment_expression {
+        $$ = jacc_alloc_arg_node($1);
+        jacc_ast_node_t *temp = $$;
+        printf("hi\n");
+    }
     | argument_expression_list ',' assignment_expression {
-        $$ = jacc_alloc_binop_node(',', $1, $3);
+        jacc_ast_node_t *temp2 = $3;
+        $$ = jacc_append_arg_node($1, $3);
+        jacc_ast_node_t *temp = $$;
+        printf("hi\n");
+        printf("hi\n");
     }
     ;
 
@@ -177,7 +196,7 @@ unary_expression
         plus_one_tok->size = sizeof(int);
         plus_one_tok->data.int_d = 1;
 
-        jacc_ast_node_t *plus_one_ast = jacc_alloc_base_node(JACC_NUM_AST, plus_one_tok);
+        jacc_ast_node_t *plus_one_ast = jacc_alloc_base_node(JACC_NUM_AST, *plus_one_tok);
 
         $$ = jacc_alloc_binop_node('+', $2, plus_one_ast);
     }
@@ -187,7 +206,7 @@ unary_expression
         minus_one_tok->size = sizeof(int);
         minus_one_tok->data.int_d = -1;
 
-        jacc_ast_node_t *minus_one_ast = jacc_alloc_base_node(JACC_NUM_AST, minus_one_tok);
+        jacc_ast_node_t *minus_one_ast = jacc_alloc_base_node(JACC_NUM_AST, *minus_one_tok);
 
         $$ = jacc_alloc_binop_node('-', $2, minus_one_ast);
     }
@@ -233,6 +252,8 @@ additive_expression
     : multiplicative_expression
     | additive_expression '+' multiplicative_expression {
         $$ = jacc_alloc_binop_node('+', $1, $3);
+        jacc_ast_node_t *temp = $$;
+        printf("hi\n");
     }
     | additive_expression '-' multiplicative_expression {
         $$ = jacc_alloc_binop_node('-', $1, $3);
@@ -347,8 +368,10 @@ expression
 
 statement
     : expression ';'  {
-        $$ = $1;
-        final_ast = *$1;
+        jacc_ast_node_t *temp = $1;
+        jacc_lex_tok_t temp2 = $2;
+        printf("hi\n");
+        final_ast = *$$;
     }
     ;
 
@@ -362,5 +385,6 @@ int main(void) {
     printf("Enter an expression: ");
     fprintf(stderr, "Did I fail?: %d\n", yyparse());
     printf("Let's see!\n");
+    print_ast(&final_ast);
     return 0;
 }

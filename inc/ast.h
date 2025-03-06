@@ -12,8 +12,10 @@ typedef enum jacc_ast_node_type {
     JACC_CHAR_AST,
     JACC_BINOP_AST,
     // JACC_ARR_AST, gets replaced by DEREF
-    JACC_FCALL_AST,
+    JACC_FUNC_AST,
+    JACC_ARG_AST,
     JACC_SEL_AST,
+    JACC_INDIR_SEL_AST,
     JACC_DEREF_AST,
     JACC_POST_OP_AST,
     JACC_PRE_OP_AST,
@@ -21,14 +23,15 @@ typedef enum jacc_ast_node_type {
     JACC_SIZEOF_AST,
     JACC_CONDITIONAL_AST
 } jacc_ast_type_t;
+
 typedef struct jacc_ast_node {
     jacc_ast_type_t ast_type;
 
-    struct jacc_lex_tok *lex_ptr;
+    struct jacc_lex_tok lex;
 
     union {
         struct {
-            int op;
+            char op;
             struct jacc_ast_node *operand;
             struct jacc_ast_node *operator;
         } binop;
@@ -36,6 +39,12 @@ typedef struct jacc_ast_node {
             struct jacc_ast_node *operand;
             struct jacc_ast_node *operator;
         } generic;
+
+        struct {
+            int n_args;
+            struct jacc_ast_node *arg;
+            struct jacc_ast_node *next_arg;
+        } argument;
         struct {
             struct jacc_ast_node *condition;
             struct jacc_ast_node *true_op;
@@ -45,7 +54,11 @@ typedef struct jacc_ast_node {
 
 } jacc_ast_node_t;
 
-jacc_ast_node_t* jacc_alloc_base_node(jacc_ast_type_t type, jacc_lex_tok_t *tok);
-jacc_ast_node_t* jacc_alloc_binop_node(int op, jacc_ast_node_t *operand, jacc_ast_node_t *operator);
+jacc_ast_node_t* jacc_alloc_base_node(jacc_ast_type_t type, jacc_lex_tok_t tok);
+jacc_ast_node_t* jacc_alloc_binop_node(char op, jacc_ast_node_t *operand, jacc_ast_node_t *operator);
 jacc_ast_node_t* jacc_alloc_generic_node(jacc_ast_type_t type, jacc_ast_node_t *operand, jacc_ast_node_t *operator);
+jacc_ast_node_t* jacc_alloc_arg_node(jacc_ast_node_t *arg);
+jacc_ast_node_t* jacc_append_arg_node(jacc_ast_node_t *arg_list, jacc_ast_node_t *next_arg);
 jacc_ast_node_t* jacc_alloc_conditional_node(jacc_ast_node_t *condition, jacc_ast_node_t *true_op, jacc_ast_node_t *false_op);
+
+void print_ast(jacc_ast_node_t *ast);
