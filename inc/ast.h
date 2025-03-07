@@ -37,7 +37,7 @@ typedef struct jacc_ast_node {
 
     union {
         struct {
-            char op;
+            char *op;
             struct jacc_ast_node *operand;
             struct jacc_ast_node *operator;
         } binop;
@@ -91,7 +91,7 @@ typedef struct jacc_ast_node {
 } jacc_ast_node_t;
 
 jacc_ast_node_t* jacc_alloc_base_node(jacc_ast_type_t type, jacc_lex_tok_t tok);
-jacc_ast_node_t* jacc_alloc_binop_node(char op, jacc_ast_node_t *operand, jacc_ast_node_t *operator);
+jacc_ast_node_t* jacc_alloc_binop_node(char *op, jacc_ast_node_t *operand, jacc_ast_node_t *operator);
 jacc_ast_node_t* jacc_alloc_logical_node(char *op, jacc_ast_node_t *operand, jacc_ast_node_t *operator);
 jacc_ast_node_t* jacc_alloc_compare_node(char *op, jacc_ast_node_t *operand, jacc_ast_node_t *operator);
 jacc_ast_node_t* jacc_alloc_generic_node(jacc_ast_type_t type, jacc_ast_node_t *operand, jacc_ast_node_t *operator);
@@ -104,4 +104,4 @@ jacc_ast_node_t* jacc_alloc_ternary_node(jacc_ast_node_t *condition, jacc_ast_no
 
 jacc_ast_node_t* jacc_append_arg_node(jacc_ast_node_t *arg_list, jacc_ast_node_t *next_arg);
 
-void print_ast(jacc_ast_node_t *ast);
+void print_ast(int *rec_lvl, jacc_ast_node_t *ast);

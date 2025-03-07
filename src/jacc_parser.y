@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "ast.h"
 
 void yyerror(const char * s);
@@ -28,6 +29,7 @@ jacc_ast_node_t *test_ast;
 %token <tok> '~'
 %token <tok> '!'
 %token <tok> ';'
+%token <tok> '='
 %token <tok> INDSEL         // ->
 %token <tok> PLUSPLUS       // ++
 %token <tok> MINUSMINUS     // --
@@ -119,13 +121,9 @@ jacc_ast_node_t *test_ast;
 primary_expression
     : IDENT {
         $$ = jacc_alloc_base_node(JACC_IDENT_AST, $1);
-        jacc_ast_node_t *temp = $$;
-        printf("IDENT\n");
     }   
     | NUMBER {
         $$ = jacc_alloc_base_node(JACC_NUM_AST, $1);
-        jacc_ast_node_t *temp = $$;
-        printf("NUMBER\n");
     }
     | STRING {
         $$ = jacc_alloc_base_node(JACC_STRING_AST, $1);
@@ -137,19 +135,13 @@ primary_expression
     ;
 
 postfix_expression
-    : primary_expression { 
-        jacc_ast_node_t *temp = $$;
-        $$ = $1;
-        printf("primary_exp\n");
-    }
+    : primary_expression 
     | postfix_expression '[' expression ']' {
-        jacc_ast_node_t *binop_ast = jacc_alloc_binop_node('+', $1, $3);
+        jacc_ast_node_t *binop_ast = jacc_alloc_binop_node("+", $1, $3);
         $$ = jacc_alloc_generic_node(JACC_DEREF_AST, binop_ast, NULL);
     } 
     | postfix_expression '(' argument_expression_list ')' {
         $$ = jacc_alloc_generic_node(JACC_FUNC_AST, $1, $3);
-        jacc_ast_node_t *temp = $3;
-        printf("hi\n");
     }
     | postfix_expression '.' IDENT {
         jacc_ast_node_t *ident_ast = jacc_alloc_base_node(JACC_IDENT_AST, $3);
@@ -164,8 +156,6 @@ postfix_expression
 
         jacc_ast_node_t *plus_plus_ast = jacc_alloc_base_node(JACC_NUM_AST, $2);
         $$ = jacc_alloc_generic_node(JACC_POSTINC_OP_AST, $1, plus_plus_ast);
-        jacc_ast_node_t *temp = $$;
-        printf("hi\n");
     }
     | postfix_expression MINUSMINUS {
         jacc_ast_node_t *minus_minus_ast = jacc_alloc_base_node(JACC_NUM_AST, $2);
@@ -178,39 +168,33 @@ postfix_expression
 argument_expression_list
     : assignment_expression {
         $$ = jacc_alloc_arg_node($1);
-        jacc_ast_node_t *temp = $$;
-        printf("hi\n");
     }
     | argument_expression_list ',' assignment_expression {
-        jacc_ast_node_t *temp2 = $3;
         $$ = jacc_append_arg_node($1, $3);
-        jacc_ast_node_t *temp = $$;
-        printf("hi\n");
-        printf("hi\n");
     }
     ;
 
 unary_expression
     : postfix_expression
     | PLUSPLUS unary_expression {
-        jacc_lex_tok_t *plus_one_tok = malloc(sizeof(jacc_lex_tok_t));
-        plus_one_tok->data_type = JACC_TYPE_INT;
-        plus_one_tok->size = sizeof(int);
-        plus_one_tok->data.int_d = 1;
+        jacc_lex_tok_t *one_tok = malloc(sizeof(jacc_lex_tok_t));
+        one_tok->data_type = JACC_TYPE_INT;
+        one_tok->size = sizeof(int);
+        one_tok->data.int_d = 1;
 
-        jacc_ast_node_t *plus_one_ast = jacc_alloc_base_node(JACC_NUM_AST, *plus_one_tok);
+        jacc_ast_node_t *one_ast = jacc_alloc_base_node(JACC_NUM_AST, *one_tok);
 
-        $$ = jacc_alloc_asgn_cmpd_node("+", $2, plus_one_ast);
+        $$ = jacc_alloc_asgn_cmpd_node("+", $2, one_ast);
     }
     | MINUSMINUS unary_expression {
-        jacc_lex_tok_t *minus_one_tok = malloc(sizeof(jacc_lex_tok_t));
-        minus_one_tok->data_type = JACC_TYPE_INT;
-        minus_one_tok->size = sizeof(int);
-        minus_one_tok->data.int_d = -1;
+        jacc_lex_tok_t *one_tok = malloc(sizeof(jacc_lex_tok_t));
+        one_tok->data_type = JACC_TYPE_INT;
+        one_tok->size = sizeof(int);
+        one_tok->data.int_d = 1;
 
-        jacc_ast_node_t *minus_one_ast = jacc_alloc_base_node(JACC_NUM_AST, *minus_one_tok);
+        jacc_ast_node_t *one_ast = jacc_alloc_base_node(JACC_NUM_AST, *one_tok);
 
-        $$ = jacc_alloc_asgn_cmpd_node("-", $2, minus_one_ast);
+        $$ = jacc_alloc_asgn_cmpd_node("-", $2, one_ast);
     }
     | unary_operator cast_expression {
         if (!strcmp($1.data.string_d, "&")) {
@@ -242,51 +226,49 @@ cast_expression
 multiplicative_expression
     : cast_expression
     | multiplicative_expression '*' cast_expression {
-        $$ = jacc_alloc_binop_node('*', $1, $3);
+        $$ = jacc_alloc_binop_node("*", $1, $3);
     }
     | multiplicative_expression '/' cast_expression {
-        $$ = jacc_alloc_binop_node('/', $1, $3);
+        $$ = jacc_alloc_binop_node("/", $1, $3);
     }
     | multiplicative_expression '%' cast_expression {
-        $$ = jacc_alloc_binop_node('/', $1, $3);
+        $$ = jacc_alloc_binop_node("%", $1, $3);
     }
     ;
 
 additive_expression
     : multiplicative_expression
     | additive_expression '+' multiplicative_expression {
-        $$ = jacc_alloc_binop_node('+', $1, $3);
-        jacc_ast_node_t *temp = $$;
-        printf("hi\n");
+        $$ = jacc_alloc_binop_node("+", $1, $3);
     }
     | additive_expression '-' multiplicative_expression {
-        $$ = jacc_alloc_binop_node('-', $1, $3);
+        $$ = jacc_alloc_binop_node("-", $1, $3);
     }
     ;
 
 shift_expression
     : additive_expression
     | shift_expression SHL additive_expression {
-        $$ = jacc_alloc_binop_node(SHL, $1, $3);
+        $$ = jacc_alloc_binop_node($2.data.string_d, $1, $3);
     }
     | shift_expression SHR additive_expression {
-        $$ = jacc_alloc_binop_node(SHR, $1, $3);
+        $$ = jacc_alloc_binop_node($2.data.string_d, $1, $3);
     }
     ;
 
 relational_expression
     : shift_expression
     | relational_expression '<' shift_expression {
-        $$ = jacc_alloc_binop_node('<', $1, $3);
+        $$ = jacc_alloc_binop_node("<", $1, $3);
     }
     | relational_expression '>' shift_expression {
-        $$ = jacc_alloc_binop_node('>', $1, $3);
+        $$ = jacc_alloc_binop_node(">", $1, $3);
     }
     | relational_expression LTEQ shift_expression {
-        $$ = jacc_alloc_binop_node(LTEQ, $1, $3);
+        $$ = jacc_alloc_compare_node($2.data.string_d, $1, $3);
     }
     | relational_expression GTEQ shift_expression {
-        $$ = jacc_alloc_binop_node(GTEQ, $1, $3);
+        $$ = jacc_alloc_compare_node($2.data.string_d, $1, $3);
     }
     ;
 
@@ -303,21 +285,21 @@ equality_expression
 and_expression
     : equality_expression
     | and_expression '&' equality_expression  {
-        $$ = jacc_alloc_binop_node('&', $1, $3);
+        $$ = jacc_alloc_binop_node("&", $1, $3);
     }
     ;
 
 exclusive_or_expression
     : and_expression
     | exclusive_or_expression '^' and_expression {
-        $$ = jacc_alloc_binop_node('^', $1, $3);
+        $$ = jacc_alloc_binop_node("^", $1, $3);
     }
     ;
 
 inclusive_or_expression
     : exclusive_or_expression
     | inclusive_or_expression '|' exclusive_or_expression {
-        $$ = jacc_alloc_binop_node('|', $1, $3);
+        $$ = jacc_alloc_binop_node("|", $1, $3);
     }
     ;
 
@@ -367,15 +349,12 @@ assignment_operator
 expression
     : assignment_expression
     | expression ',' assignment_expression {
-        $$ = jacc_alloc_binop_node(',', $1, $3);
+        $$ = jacc_alloc_binop_node(",", $1, $3);
     }
     ;
 
 statement
     : expression ';'  {
-        jacc_ast_node_t *temp = $1;
-        jacc_lex_tok_t temp2 = $2;
-        printf("hi\n");
         final_ast = *$$;
     }
     ;
@@ -390,6 +369,7 @@ int main(void) {
     printf("Enter an expression: ");
     fprintf(stderr, "Did I fail?: %d\n", yyparse());
     printf("Let's see!\n");
-    print_ast(&final_ast);
+    int rec_lvl = -1;
+    print_ast(&rec_lvl, &final_ast);
     return 0;
 }

@@ -29,7 +29,7 @@ jacc_ast_node_t* jacc_alloc_base_node(jacc_ast_type_t type, jacc_lex_tok_t lex_t
     return node;
 }
 
-jacc_ast_node_t* jacc_alloc_binop_node(char op, jacc_ast_node_t *operand, jacc_ast_node_t *operator) {
+jacc_ast_node_t* jacc_alloc_binop_node(char *op, jacc_ast_node_t *operand, jacc_ast_node_t *operator) {
     jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
 
     node->ast_type = JACC_BINOP_AST;
@@ -191,104 +191,154 @@ void print_lex_data(jacc_lex_tok_t *tok) {
     }
 }
 
-void print_ast(jacc_ast_node_t *ast) {
+void print_tab(int *rec_lvl) {
+    for (int i = 0; i < *rec_lvl; i++) {
+        printf("\t");
+    }
+}
+
+void print_ast(int *rec_lvl, jacc_ast_node_t *ast) {
     switch (ast->ast_type) {
         // Following have no children
         case JACC_IDENT_AST:
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
             printf("IDENT ");
             print_lex_data(&ast->lex);
-            break;
+            *rec_lvl -= 1; break;
         case JACC_NUM_AST:
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
             printf("CONSTANT: ");
             print_lex_data(&ast->lex);
-            break;
+            *rec_lvl -= 1; break;
         case JACC_STRING_AST:
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
             printf("STRING ");
             print_lex_data(&ast->lex);
-            break;
+            *rec_lvl -= 1; break;
         case JACC_CHAR_AST:
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
             printf("CONSTANT: ");
             print_lex_data(&ast->lex);
-            break;
+            *rec_lvl -= 1; break;
         case JACC_BINOP_AST:
-            printf("BINARY OP %c\n", ast->binop.op);
-            print_ast(ast->binop.operand);
-            print_ast(ast->binop.operator);
-            break;
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
+            printf("BINARY OP %s\n", ast->binop.op);
+            print_ast(rec_lvl, ast->binop.operand);
+            print_ast(rec_lvl, ast->binop.operator);
+            *rec_lvl -= 1; break;
         case JACC_LOG_OP_AST:
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
             printf("LOGICAL OP %s\n", ast->logical.op);
-            print_ast(ast->logical.operand);
-            print_ast(ast->logical.operator);
-            break;
+            print_ast(rec_lvl, ast->logical.operand);
+            print_ast(rec_lvl, ast->logical.operator);
+            *rec_lvl -= 1; break;
         case JACC_COMPARE_AST:
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
             printf("COMPARISON OP %s\n", ast->compare.op);
-            print_ast(ast->compare.operand);
-            print_ast(ast->compare.operator);
-            break;
+            print_ast(rec_lvl, ast->compare.operand);
+            print_ast(rec_lvl, ast->compare.operator);
+            *rec_lvl -= 1; break;
         case JACC_FUNC_AST:
-            printf("FNCALL, %d, arguments", ast->generic.operator->argument.n_args);
-            print_ast(ast->generic.operand);
-            print_ast(ast->generic.operator);
-            break;
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
+            printf("FNCALL, %d, arguments\n", ast->generic.operator->argument.n_args);
+            print_ast(rec_lvl, ast->generic.operand);
+            print_ast(rec_lvl, ast->generic.operator);
+            *rec_lvl -= 1; break;
         case JACC_ARG_AST:
-            print_ast(ast->argument.arg);
+            print_tab(rec_lvl);
+            printf("arg #1=\n");
+            print_ast(rec_lvl, ast->argument.arg);
 
             jacc_ast_node_t *iter = ast;
 
+            int i = 1;
             while (iter->argument.next_arg != NULL) {
+                i++;
                 iter = iter->argument.next_arg;
-                print_ast(iter->argument.arg);
+                printf("arg #%d=\n", i);
+                print_ast(rec_lvl, iter->argument.arg);
             }
             break;
         case JACC_SEL_AST:
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
             printf("SELECT, member ");
-            print_ast(ast->generic.operator);
-            print_ast(ast->generic.operand);
-            break;
+            i = -1;
+            print_ast(&i, ast->generic.operator);
+            print_ast(rec_lvl, ast->generic.operand);
+            *rec_lvl -= 1; break;
         case JACC_INDIR_SEL_AST:
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
             printf("INDIRECT SELECT, member ");
-            print_ast(ast->generic.operator);
-            print_ast(ast->generic.operand);
-            break;
+            i = 0;
+            print_ast(&i, ast->generic.operator);
+            print_ast(rec_lvl, ast->generic.operand);
+            *rec_lvl -= 1; break;
         case JACC_DEREF_AST:
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
             printf("DEREF\n");
-            print_ast(ast->generic.operand);
-            break;
+            print_ast(rec_lvl, ast->generic.operand);
+            *rec_lvl -= 1; break;
         case JACC_POSTINC_OP_AST:
-            printf("UNARY OP POSTINC");
-            print_ast(ast->generic.operand);
-            break;
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
+            printf("UNARY OP POSTINC\n");
+            print_ast(rec_lvl, ast->generic.operand);
+            *rec_lvl -= 1; break;
         case JACC_POSTSUB_OP_AST:
-            printf("UNARY OP POSTSUB");
-            print_ast(ast->generic.operand);
-            break;
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
+            printf("UNARY OP POSTSUB\n");
+            print_ast(rec_lvl, ast->generic.operand);
+            *rec_lvl -= 1; break;
         case JACC_ASSIGN_COMP_AST:
-            printf("ASSIGNMENT COMPOUND (%s)", ast->asgn_cmpd.cmpd);
-            print_ast(ast->asgn_cmpd.operand);
-            print_ast(ast->asgn_cmpd.operator);
-            break;
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
+            printf("ASSIGNMENT COMPOUND (%s)\n", ast->asgn_cmpd.cmpd);
+            print_ast(rec_lvl, ast->asgn_cmpd.operand);
+            print_ast(rec_lvl, ast->asgn_cmpd.operator);
+            *rec_lvl -= 1; break;
         case JACC_UNARY_OP_AST:
-            printf("UNARY OP %s", ast->unary_op.op);
-            print_ast(ast->unary_op.operand);
-            break;
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
+            printf("UNARY OP %s\n", ast->unary_op.op);
+            print_ast(rec_lvl, ast->unary_op.operand);
+            *rec_lvl -= 1; break;
         case JACC_ADDR_OF_AST:
-            printf("ADDRESSOF");
-            print_ast(ast->addr_of.operand);
-            break;
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
+            printf("ADDRESSOF\n");
+            print_ast(rec_lvl, ast->addr_of.operand);
+            *rec_lvl -= 1; break;
         case JACC_CAST_AST:
-            break;
+            *rec_lvl += 1;
+            *rec_lvl -= 1; break;
         case JACC_SIZEOF_AST:
-            printf("SIZEOF");
-            print_ast(ast->sizeof_op.operand);
-            break;
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
+            printf("SIZEOF\n");
+            print_ast(rec_lvl, ast->sizeof_op.operand);
+            *rec_lvl -= 1; break;
         case JACC_TERNARY_AST:
-            printf("TERNARY OP, IF:");
-            print_ast(ast->conditional.condition);
-            printf("THEN:");
-            print_ast(ast->conditional.true_op);
-            printf("ELSE:");
-            print_ast(ast->conditional.false_op);
-            break;
+            *rec_lvl += 1;
+            print_tab(rec_lvl);
+            printf("TERNARY OP, IF:\n");
+            print_ast(rec_lvl, ast->conditional.condition);
+            printf("THEN:\n");
+            print_ast(rec_lvl, ast->conditional.true_op);
+            printf("ELSE:\n");
+            print_ast(rec_lvl, ast->conditional.false_op);
+            *rec_lvl -= 1; break;
         default:
             exit(1);
     }
