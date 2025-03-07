@@ -163,11 +163,13 @@ postfix_expression
     | postfix_expression PLUSPLUS {
 
         jacc_ast_node_t *plus_plus_ast = jacc_alloc_base_node(JACC_NUM_AST, $2);
-        $$ = jacc_alloc_generic_node(JACC_POST_OP_AST, $1, plus_plus_ast);
+        $$ = jacc_alloc_generic_node(JACC_POSTINC_OP_AST, $1, plus_plus_ast);
+        jacc_ast_node_t *temp = $$;
+        printf("hi\n");
     }
     | postfix_expression MINUSMINUS {
         jacc_ast_node_t *minus_minus_ast = jacc_alloc_base_node(JACC_NUM_AST, $2);
-        $$ = jacc_alloc_generic_node(JACC_POST_OP_AST, $1, minus_minus_ast);
+        $$ = jacc_alloc_generic_node(JACC_POSTSUB_OP_AST, $1, minus_minus_ast);
     }
     // '(' type_name ')' '{' initializer_list '}'
     // '(' type_name ')' '{' initializer_list, '}'
@@ -198,7 +200,7 @@ unary_expression
 
         jacc_ast_node_t *plus_one_ast = jacc_alloc_base_node(JACC_NUM_AST, *plus_one_tok);
 
-        $$ = jacc_alloc_binop_node('+', $2, plus_one_ast);
+        $$ = jacc_alloc_asgn_cmpd_node("+", $2, plus_one_ast);
     }
     | MINUSMINUS unary_expression {
         jacc_lex_tok_t *minus_one_tok = malloc(sizeof(jacc_lex_tok_t));
@@ -208,15 +210,17 @@ unary_expression
 
         jacc_ast_node_t *minus_one_ast = jacc_alloc_base_node(JACC_NUM_AST, *minus_one_tok);
 
-        $$ = jacc_alloc_binop_node('-', $2, minus_one_ast);
+        $$ = jacc_alloc_asgn_cmpd_node("-", $2, minus_one_ast);
     }
     | unary_operator cast_expression {
-        //$$ = jacc_alloc_generic_node(JACC_CAST_AST, $1, $2);
-        printf("When does this occur\n");
-
+        if (!strcmp($1.data.string_d, "&")) {
+            $$ = jacc_alloc_addr_of_node($2);
+        } else {
+            $$ = jacc_alloc_unary_op_node($1, $2);
+        }
     }
     | SIZEOF unary_expression {
-        $$ = jacc_alloc_generic_node(JACC_SIZEOF_AST, $2, NULL);
+        $$ = jacc_alloc_sizeof_node($2);
     }
     // | SIZEOF '(' type_name ')'
     ;
@@ -289,10 +293,10 @@ relational_expression
 equality_expression
     : relational_expression
     | equality_expression EQEQ relational_expression {
-        $$ = jacc_alloc_binop_node(EQEQ, $1, $3);
+        $$ = jacc_alloc_compare_node($2.data.string_d, $1, $3);
     }
     | equality_expression NOTEQ relational_expression {
-        $$ = jacc_alloc_binop_node(NOTEQ, $1, $3);
+        $$ = jacc_alloc_compare_node($2.data.string_d, $1, $3);
     }
     ;
 
@@ -320,28 +324,29 @@ inclusive_or_expression
 logical_and_expression
     : inclusive_or_expression
     | logical_and_expression LOGAND inclusive_or_expression  {
-        $$ = jacc_alloc_binop_node(LOGAND, $1, $3);
+        $$ = jacc_alloc_logical_node($2.data.string_d, $1, $3);
     }
     ;
 
 logical_or_expression
     : logical_and_expression
     | logical_or_expression LOGOR logical_and_expression {
-        $$ = jacc_alloc_binop_node(LOGOR, $1, $3);
+        $$ = jacc_alloc_logical_node($2.data.string_d, $1, $3);
     }
     ;
 
 conditional_expression
     : logical_or_expression
     | logical_or_expression '?' expression ':' conditional_expression {
-        $$ = jacc_alloc_conditional_node($1, $3, $5);
+        $$ = jacc_alloc_ternary_node($1, $3, $5);
     }
     ;
 
 assignment_expression
     : conditional_expression
     | unary_expression assignment_operator assignment_expression {
-        $$ = jacc_alloc_binop_node(1, $1, $3);
+        char *op = $2.data.string_d;
+        $$ = jacc_alloc_asgn_cmpd_node(op, $1, $3);
     }
     ;
 

@@ -29,41 +29,6 @@ jacc_ast_node_t* jacc_alloc_base_node(jacc_ast_type_t type, jacc_lex_tok_t lex_t
     return node;
 }
 
-jacc_ast_node_t* jacc_alloc_generic_node(jacc_ast_type_t type, jacc_ast_node_t *operand, jacc_ast_node_t *operator) {
-    jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
-
-    switch (type) {
-        case JACC_FUNC_AST:
-            node->ast_type = JACC_FUNC_AST;
-            node->generic.operand = operand;
-            node->generic.operator = operator;
-            break;
-
-        case JACC_SEL_AST:
-            node->ast_type = JACC_SEL_AST;
-            node->generic.operand = operand;
-            node->generic.operator = operator;
-            break;
-
-        case JACC_INDIR_SEL_AST:
-            node->ast_type = JACC_INDIR_SEL_AST;
-            node->generic.operand = operand;
-            node->generic.operator = operator;
-            break;
-
-        case JACC_DEREF_AST:
-            node->ast_type = JACC_DEREF_AST;
-            node->generic.operand = operand;
-            break;
-
-        default:
-            exit(1);
-
-    }
-
-    return node;
-}
-
 jacc_ast_node_t* jacc_alloc_binop_node(char op, jacc_ast_node_t *operand, jacc_ast_node_t *operator) {
     jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
 
@@ -71,6 +36,49 @@ jacc_ast_node_t* jacc_alloc_binop_node(char op, jacc_ast_node_t *operand, jacc_a
     node->binop.op = op;
     node->binop.operand = operand;
     node->binop.operator = operator;
+
+    return node;
+}
+
+jacc_ast_node_t* jacc_alloc_logical_node(char *op, jacc_ast_node_t *operand, jacc_ast_node_t *operator) {
+    jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
+
+    node->ast_type = JACC_LOG_OP_AST;
+    node->logical.op = op;
+    node->logical.operand = operand;
+    node->logical.operator = operator;
+
+    return node;
+}
+
+jacc_ast_node_t* jacc_alloc_compare_node(char *op, jacc_ast_node_t *operand, jacc_ast_node_t *operator) {
+    jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
+
+    node->ast_type = JACC_COMPARE_AST;
+    node->compare.op = op;
+    node->compare.operand = operand;
+    node->compare.operator = operator;
+
+    return node;
+}
+
+jacc_ast_node_t* jacc_alloc_generic_node(jacc_ast_type_t type, jacc_ast_node_t *operand, jacc_ast_node_t *operator) {
+    jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
+
+    node->ast_type = type;
+    node->generic.operand = operand;
+    node->generic.operator = operator;
+
+    return node;
+}
+
+jacc_ast_node_t* jacc_alloc_asgn_cmpd_node(char *cmpd, jacc_ast_node_t *operand, jacc_ast_node_t *operator) {
+    jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
+
+    node->ast_type = JACC_ASSIGN_COMP_AST;
+    node->asgn_cmpd.cmpd = cmpd;
+    node->asgn_cmpd.operand = operand;
+    node->asgn_cmpd.operator = operator;
 
     return node;
 }
@@ -89,22 +97,55 @@ jacc_ast_node_t* jacc_alloc_arg_node(jacc_ast_node_t *arg) {
 jacc_ast_node_t* jacc_append_arg_node(jacc_ast_node_t *arg_list, jacc_ast_node_t *next_arg) {
     jacc_ast_node_t *iter = arg_list;
 
+    jacc_ast_node_t *cpy = malloc(sizeof(jacc_ast_node_t));
+
     arg_list->argument.n_args++;
 
     while (iter->argument.next_arg != NULL) {
         iter = iter->argument.next_arg;
     }
 
-    iter->argument.next_arg = next_arg;
-    //next_arg->argument.arg = next_arg;
+    // Store a local copy of the argument to prevent referencing modified version while prenting
+    *cpy = *next_arg;
+
+    iter->argument.next_arg = cpy;
+    iter->argument.next_arg->argument.arg = next_arg;
+    iter->argument.next_arg->argument.next_arg = NULL;
 
     return arg_list;
 }
 
-jacc_ast_node_t* jacc_alloc_conditional_node(jacc_ast_node_t *condition, jacc_ast_node_t *true_op, jacc_ast_node_t *false_op) {
+jacc_ast_node_t* jacc_alloc_unary_op_node(jacc_lex_tok_t tok, jacc_ast_node_t *operand) { 
     jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
 
-    node->ast_type = JACC_CONDITIONAL_AST;
+    node->ast_type = JACC_UNARY_OP_AST;
+    node->unary_op.op = tok.data.string_d;
+    node->unary_op.operand = operand;
+
+    return node;
+}
+
+jacc_ast_node_t* jacc_alloc_addr_of_node(jacc_ast_node_t *operand) { 
+    jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
+
+    node->ast_type = JACC_ADDR_OF_AST;
+    node->addr_of.operand = operand;
+
+    return node;
+}
+
+jacc_ast_node_t* jacc_alloc_sizeof_node(jacc_ast_node_t *operand) {
+    jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
+    node->ast_type = JACC_SIZEOF_AST;
+    node->sizeof_op.operand = operand;
+
+    return node;
+}
+
+jacc_ast_node_t* jacc_alloc_ternary_node(jacc_ast_node_t *condition, jacc_ast_node_t *true_op, jacc_ast_node_t *false_op) {
+    jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
+
+    node->ast_type = JACC_TERNARY_AST;
     node->conditional.condition = condition;
     node->conditional.true_op = true_op;
     node->conditional.false_op = false_op;
@@ -169,11 +210,20 @@ void print_ast(jacc_ast_node_t *ast) {
             printf("CONSTANT: ");
             print_lex_data(&ast->lex);
             break;
-
         case JACC_BINOP_AST:
             printf("BINARY OP %c\n", ast->binop.op);
             print_ast(ast->binop.operand);
             print_ast(ast->binop.operator);
+            break;
+        case JACC_LOG_OP_AST:
+            printf("LOGICAL OP %s\n", ast->logical.op);
+            print_ast(ast->logical.operand);
+            print_ast(ast->logical.operator);
+            break;
+        case JACC_COMPARE_AST:
+            printf("COMPARISON OP %s\n", ast->compare.op);
+            print_ast(ast->compare.operand);
+            print_ast(ast->compare.operator);
             break;
         case JACC_FUNC_AST:
             printf("FNCALL, %d, arguments", ast->generic.operator->argument.n_args);
@@ -186,11 +236,8 @@ void print_ast(jacc_ast_node_t *ast) {
             jacc_ast_node_t *iter = ast;
 
             while (iter->argument.next_arg != NULL) {
-                //if (iter->ast_type != JACC_ARG_AST) {
-                //    break;
-                //}
                 iter = iter->argument.next_arg;
-                print_ast(iter);
+                print_ast(iter->argument.arg);
             }
             break;
         case JACC_SEL_AST:
@@ -207,15 +254,40 @@ void print_ast(jacc_ast_node_t *ast) {
             printf("DEREF\n");
             print_ast(ast->generic.operand);
             break;
-        case JACC_POST_OP_AST:
+        case JACC_POSTINC_OP_AST:
+            printf("UNARY OP POSTINC");
+            print_ast(ast->generic.operand);
             break;
-        case JACC_PRE_OP_AST:
+        case JACC_POSTSUB_OP_AST:
+            printf("UNARY OP POSTSUB");
+            print_ast(ast->generic.operand);
+            break;
+        case JACC_ASSIGN_COMP_AST:
+            printf("ASSIGNMENT COMPOUND (%s)", ast->asgn_cmpd.cmpd);
+            print_ast(ast->asgn_cmpd.operand);
+            print_ast(ast->asgn_cmpd.operator);
+            break;
+        case JACC_UNARY_OP_AST:
+            printf("UNARY OP %s", ast->unary_op.op);
+            print_ast(ast->unary_op.operand);
+            break;
+        case JACC_ADDR_OF_AST:
+            printf("ADDRESSOF");
+            print_ast(ast->addr_of.operand);
             break;
         case JACC_CAST_AST:
             break;
         case JACC_SIZEOF_AST:
+            printf("SIZEOF");
+            print_ast(ast->sizeof_op.operand);
             break;
-        case JACC_CONDITIONAL_AST:
+        case JACC_TERNARY_AST:
+            printf("TERNARY OP, IF:");
+            print_ast(ast->conditional.condition);
+            printf("THEN:");
+            print_ast(ast->conditional.true_op);
+            printf("ELSE:");
+            print_ast(ast->conditional.false_op);
             break;
         default:
             exit(1);
