@@ -11,6 +11,8 @@ jacc_ast_node_t final_ast;
 
 jacc_ast_node_t *test_ast;
 
+extern FILE *yyin;
+
 %}
 
 %union {
@@ -350,7 +352,13 @@ expression
 
 statement
     : expression ';'  {
-        final_ast = *$$;
+        int ident = -1;
+        jacc_print_ast(&ident, $1);
+    }
+    | statement expression ';' {
+
+        int ident = -1;
+        jacc_print_ast(&ident, $2);
     }
     ;
 
@@ -360,12 +368,24 @@ void yyerror(const char *s) {
     fprintf(stderr, "HELP Error: %s\n", s);
 }
 
-int main(void) {
-    printf("Enter an expression: ");
-    fprintf(stderr, "Did I fail?: %d\n", yyparse());
-    printf("Let's see!\n");
-    int ident = -1;
-    jacc_print_ast(&ident, &final_ast);
-//    print_ast(&rec_lvl, &final_ast);
+int main(int argc, char **argv) {
+    FILE *file;
+    if (argc == 2) {
+        file = fopen(argv[1], "r");
+        if (!file) {
+            fprintf(stderr, "Failed to open file");
+            return 1;
+        }
+        yyin = file;
+    } else {
+        yyin = stdin;
+    }
+
+
+    fprintf(stderr, "Parser fail status: %d\n", yyparse());
+
+    if (yyin != stdin) {
+        fclose(file);
+    }
     return 0;
 }
