@@ -29,3 +29,4 @@ int lex_handle_integers(char *yytext, jacc_lex_tok_t *token);
 char *lex_return_str_esc(char esc);
 char lex_handle_esc_char(char *s);
 char lex_handle_esc_str(char *s);
+jacc_lex_tok_t lex_alloc_int(int val);

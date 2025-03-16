@@ -177,3 +177,12 @@ int lex_handle_integers(char *yytext, jacc_lex_tok_t *token) {
     }
     return NUMBER;
 }
+
+jacc_lex_tok_t lex_alloc_int(int val) {
+    jacc_lex_tok_t *tok = malloc(sizeof(jacc_lex_tok_t));
+    tok->data_type = JACC_TYPE_INT;
+    tok->size = sizeof(int);
+    tok->data.int_d = val; 
+
+    return *tok;
+}
