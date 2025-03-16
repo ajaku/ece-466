@@ -122,16 +122,16 @@ extern FILE *yyin;
 
 primary_expression
     : IDENT {
-        $$ = jacc_alloc_base($1);
+        $$ = jacc_alloc_base(JACC_IDENT_AST, $1);
     }   
     | NUMBER {
-        $$ = jacc_alloc_base($1);
+        $$ = jacc_alloc_base(JACC_CONST_AST, $1);
     }
     | STRING {
-        $$ = jacc_alloc_base($1);
+        $$ = jacc_alloc_base(JACC_STRING_AST, $1);
     }
     | CHARLIT {
-        $$ = jacc_alloc_base($1);
+        $$ = jacc_alloc_base(JACC_CHAR_AST, $1);
     }
     | '(' expression ')' { $$ = $2; }
     ;
@@ -149,11 +149,11 @@ postfix_expression
         $$ = jacc_alloc_func($1, NULL);
     }
     | postfix_expression '.' IDENT {
-        jacc_ast_node_t *ident_ast = jacc_alloc_base($3);
+        jacc_ast_node_t *ident_ast = jacc_alloc_base(JACC_IDENT_AST, $3);
         $$ = jacc_alloc_binop(JACC_BIN_OP_SELECT, '.', $1, ident_ast);
     }
     | postfix_expression INDSEL IDENT {
-        jacc_ast_node_t *ident_ast = jacc_alloc_base($3);
+        jacc_ast_node_t *ident_ast = jacc_alloc_base(JACC_IDENT_AST, $3);
         jacc_ast_node_t *indsel_ast = jacc_alloc_unop(JACC_UN_OP_DEREF, '*', $1);
         $$ = jacc_alloc_binop(JACC_BIN_OP_SELECT_INDIR, INDSEL, indsel_ast, ident_ast);
     }
@@ -180,11 +180,11 @@ argument_expression_list
 unary_expression
     : postfix_expression
     | PLUSPLUS unary_expression {
-        jacc_ast_node_t *one = jacc_alloc_base(lex_alloc_int(1));
+        jacc_ast_node_t *one = jacc_alloc_base(JACC_CONST_AST, lex_alloc_int(1));
         $$ = jacc_alloc_binop(JACC_BIN_OP_ASSIGN_COMP, '+', $2, one);
     }
     | MINUSMINUS unary_expression {
-        jacc_ast_node_t *one = jacc_alloc_base(lex_alloc_int(1));
+        jacc_ast_node_t *one = jacc_alloc_base(JACC_CONST_AST, lex_alloc_int(1));
         $$ = jacc_alloc_binop(JACC_BIN_OP_ASSIGN_COMP, '-', $2, one);
     }
     | unary_operator cast_expression {
@@ -351,16 +351,13 @@ expression
     ;
 
 statement
-    : expression ';'  {
+    : expression ';' {
         int indent = -1;
         jacc_print_ast(&indent, $1);
-        //jacc_ast_node_t *temp = $1;
-        //printf("check!\n");
     }
     | statement expression ';' {
-
-        //int indent = -1;
-        //jacc_print_ast(&indent, $2);
+        int indent = -1;
+        jacc_print_ast(&indent, $2);
     }
     ;
 

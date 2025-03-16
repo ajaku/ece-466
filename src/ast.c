@@ -1,51 +1,8 @@
 #include "ast.h"
+#include "jacc_parser.tab.h"
 #include "types.h"
 
 const char *ast_to_str[] = {
-    "BASE",
-    "FUNC",
-    "ARGS",
-    "UNARY OP",
-    "BINARY OP",
-    "TERNARY"
-};
-
-const char *base_to_str[] = {
-  "CHAR",
-  "CHAR",
-  "STRING",
-  "CONSTANT",
-  "CONSTANT",
-  "CONSTANT",
-  "CONSTANT",
-  "CONSTANT",
-  "CONSTANT",
-  "CONSTANT",
-  "CONSTANT",
-  "CONSTANT"
-};
-
-const char *un_op_to_str[] = {
-    "STANDARD",
-    "DEREF",
-    "SIZEOF",
-    "ADDROF",
-    "POSTINC"
-    "POSTSUB"
-};
-
-const char *bin_op_to_str[] = {
-    "STANDARD",
-    "ASSIGNMENT",
-    "ASSIGNMENT COMPOUND",
-    "COMPARE",
-    "LOGICAL",
-    "SELECT",
-    "SELECT INDIR"
-};
-
-/*
-const char *ast_type_to_string[] = {
     "IDENT",
     "CONST",
     "STRING",
@@ -53,21 +10,28 @@ const char *ast_type_to_string[] = {
     "FUNC",
     "ARGS",
     "UNARY OP",
+    "BINARY OP",
+    "TERNARY OP"
+};
+
+const char *un_op_to_str[] = {
+    "",
     "DEREF",
     "SIZEOF",
-    "ADDRESS OF",
-    "UNARY OP POSTINC",
-    "UNARY OP POSTSUB",
-    "BINARY OPERATOR",
+    "ADDROF",
+    "POSTINC",
+    "POSTSUB"
+};
+
+const char *bin_op_to_str[] = {
+    "",
     "ASSIGNMENT",
     "ASSIGNMENT COMPOUND",
     "COMPARE OP",
-    "LOGICAL OPERATOR",
+    "LOGICAL OP",
     "SELECT",
-    "INDIRECT SELECT",
-    "TERNARY"
+    "SELECT INDIR"
 };
-*/
 
 jacc_ast_node_t* jacc_alloc_node(jacc_ast_type_t type) {
     jacc_ast_node_t *node = malloc(sizeof(jacc_ast_node_t));
@@ -81,8 +45,8 @@ jacc_ast_node_t* jacc_alloc_node(jacc_ast_type_t type) {
     return node;
 }
 
-jacc_ast_node_t* jacc_alloc_base(jacc_lex_tok_t lex) {
-    jacc_ast_node_t *node = jacc_alloc_node(JACC_BASE_AST);
+jacc_ast_node_t* jacc_alloc_base(jacc_ast_type_t type, jacc_lex_tok_t lex) {
+    jacc_ast_node_t *node = jacc_alloc_node(type);
     node->lex = lex;
 
     return node;
@@ -186,6 +150,76 @@ void jacc_print_lex_data(jacc_lex_tok_t *tok) {
     }
 }
 
+void jacc_print_operator(int operator) {
+    if (operator <= 126) {
+        printf("%c\n", operator);
+        return;
+    }
+
+    switch (operator) {
+        case INDSEL:
+            printf(".\n");
+            break;
+        case SHL:
+            printf("<<\n");
+            break;
+        case SHR:
+            printf(">>\n");
+            break;
+        case LTEQ:
+            printf("<=\n");
+            break;
+        case GTEQ:
+            printf(">=\n");
+            break;
+        case EQEQ:
+            printf("==\n");
+            break;
+        case NOTEQ:
+            printf("!=\n");
+            break;
+        case LOGAND:
+            printf("&&\n");
+            break;
+        case LOGOR:
+            printf("||\n");
+            break;
+        case TIMESEQ:
+            printf("*=\n");
+            break;
+        case DIVEQ:
+            printf("/=\n");
+            break;
+        case MODEQ:
+            printf("%%=\n");
+            break;
+        case PLUSEQ:
+            printf("+=\n");
+            break;
+        case MINUSEQ:
+            printf("-=\n");
+            break;
+        case SHLEQ:
+            printf("<<=\n");
+            break;
+        case SHREQ:
+            printf(">>=\n");
+            break;
+        case ANDEQ:
+            printf("&=\n");
+            break;
+        case XOREQ:
+            printf("^=\n");
+            break;
+        case OREQ:
+            printf("|=\n");
+            break;
+        default:
+            printf("\n");
+            break;
+    }
+}
+
 void jacc_auto_indent(int *indent, jacc_ast_node_t *node, void(*func)(int*, jacc_ast_node_t*)) {
     (*indent)++;
     (*func)(indent, node);
@@ -200,114 +234,86 @@ void jacc_print_indent(int *ident) {
 
 void jacc_print_base(int *indent, jacc_ast_node_t *node) {
     jacc_print_indent(indent);
-    printf("%s ", base_to_str[node->lex.data_type]);
+    printf("%s ", ast_to_str[node->ast_type]);
     jacc_print_lex_data(&node->lex);
 }
 
-void jacc_print_unary_op(int *indent, jacc_ast_node_t *node) {
+void jacc_print_un_op(int *indent, jacc_ast_node_t *node) {
     jacc_print_indent(indent);
-    printf("%s ", base_to_str[node->ast_type]);
+    printf("%s ", ast_to_str[node->ast_type]);
     printf("%s ", un_op_to_str[node->unop.u_type]);
-    //printf("%c", node->unop.operator);
-    //jacc_print_lex_data(&node->unop.lex);
+    jacc_print_operator(node->unop.operator);
+    jacc_print_ast(indent, node->unop.operand);
 }
 
-/*
-void jacc_print_no_type_ast(int *ident, jacc_ast_node_t *node) {
-    jacc_print_ident(ident);
-    printf("%s ", ast_type_to_string[node->ast_type]);
-    jacc_print_lex_data(&node->lex);
-}
-
-void jacc_print_operand_ast(int *ident, jacc_ast_node_t *node) {
-    jacc_print_ident(ident);
-    printf("%s\n", ast_type_to_string[node->ast_type]);
-    jacc_print_ast(ident, node->operand_ast.operand);
-}
-
-void jacc_print_attr_operand_ast(int *ident, jacc_ast_node_t *node) {
-    jacc_print_ident(ident);
-    printf("%s ", ast_type_to_string[node->ast_type]);
-    printf("%s\n", node->attr_operand_ast.attr);
-    jacc_print_ast(ident, node->attr_operand_ast.operand);
-}
-
-void jacc_print_operand_operator_ast(int *ident, jacc_ast_node_t *node) {
-    jacc_print_ident(ident);
-    printf("%s\n", ast_type_to_string[node->ast_type]);
-    jacc_print_ast(ident, node->operand_operator_ast.operand);
-    if (node->operand_operator_ast.operator != NULL) {
-        jacc_print_ast(ident, node->operand_operator_ast.operator);
+void jacc_print_bin_op(int *indent, jacc_ast_node_t *node) {
+    jacc_print_indent(indent);
+    if (node->binop.b_type == JACC_BIN_OP_STD) {
+        printf("%s ", ast_to_str[node->ast_type]);
     }
+    printf("%s ", bin_op_to_str[node->binop.b_type]);
+    jacc_print_operator(node->binop.operator);
+    jacc_print_ast(indent, node->binop.left);
+    jacc_print_ast(indent, node->binop.right);
 }
 
-void jacc_print_attr_operand_operator_ast(int *ident, jacc_ast_node_t *node) {
-    jacc_print_ident(ident);
-    printf("%s ", ast_type_to_string[node->ast_type]);
-    printf("%s\n", node->attr_operand_operator_ast.attr);
-    jacc_print_ast(ident, node->attr_operand_operator_ast.operand);
-    jacc_print_ast(ident, node->attr_operand_operator_ast.operator);
+void jacc_print_func(int *indent, jacc_ast_node_t *node) {
+    jacc_print_indent(indent);
+    printf("%s\n", ast_to_str[node->ast_type]);
+    jacc_print_ast(indent, node->func.func);
+    jacc_print_ast(indent, node->func.args);
 }
 
-void jacc_print_arg_ast(int *ident, jacc_ast_node_t *node) {
-    printf("woah\n");
-    if (node == NULL) {
-        printf("nope\n");
-        return;
-    }
-    jacc_print_ident(ident);
+void jacc_print_args(int *indent, jacc_ast_node_t *node) {
+    jacc_print_indent(indent);
     printf("arg #1=\n");
-    jacc_print_ast(ident, node->arg_ast.arg);
+    jacc_print_ast(indent, node->args.arg);
 
     jacc_ast_node_t *iter = node;
     int i = 1;
-    while (iter->arg_ast.next_arg != NULL) {
+    while (iter->args.next_arg != NULL) {
         i++;
-        iter = iter->arg_ast.next_arg;
-        jacc_print_ident(ident);
+        iter = iter->args.next_arg;
+        jacc_print_indent(indent);
         printf("arg #%d=\n", i);
-        jacc_print_ast(ident, iter->arg_ast.arg);
+        jacc_print_ast(indent, iter->args.arg);
     }
 }
 
-void jacc_print_ternary_ast(int *ident, jacc_ast_node_t *node) {
-    jacc_print_ident(ident);
-    printf("%s IF:\n", ast_type_to_string[node->ast_type]);
-    jacc_print_ast(ident, node->ternary_ast.cond);
+void jacc_print_ternary(int *indent, jacc_ast_node_t *node) {
+    jacc_print_indent(indent);
+    printf("%s IF:\n", ast_to_str[node->ast_type]);
+    jacc_print_ast(indent, node->tern.cond);
     printf("THEN:\n");
-    jacc_print_ast(ident, node->ternary_ast.t_op);
+    jacc_print_ast(indent, node->tern.t_op);
     printf("ELSE:\n");
-    jacc_print_ast(ident, node->ternary_ast.f_op);
+    jacc_print_ast(indent, node->tern.f_op);
 }
-*/
 
 void jacc_print_ast(int *indent, jacc_ast_node_t *node) {
-    jacc_auto_indent(indent, node, jacc_print_base);
-    /*
-    switch (node->union_type) {
-        case JACC_NO_TYPE_U:
-            jacc_auto_indent(indent, node, jacc_print_no_type_ast);
+    switch (node->ast_type) {
+        case JACC_IDENT_AST:
+        case JACC_CONST_AST:
+        case JACC_STRING_AST:
+        case JACC_CHAR_AST:
+            jacc_auto_indent(indent, node, jacc_print_base);
             break;
-        case JACC_OPERAND_U:
-            jacc_auto_indent(indent, node, jacc_print_operand_ast);
+        case JACC_FUNC_AST:
+            jacc_auto_indent(indent, node, jacc_print_func);
             break;
-        case JACC_ATTR_OPERAND_U:
-            jacc_auto_indent(indent, node, jacc_print_attr_operand_ast);
+        case JACC_ARGS_AST:
+            jacc_auto_indent(indent, node, jacc_print_args);
             break;
-        case JACC_OPERAND_OPERATOR_U:
-            jacc_auto_indent(indent, node, jacc_print_operand_operator_ast);
+        case JACC_UN_OP_AST:
+            jacc_auto_indent(indent, node, jacc_print_un_op);
             break;
-        case JACC_ATTR_OPERAND_OPERATOR_U:
-            jacc_auto_indent(indent, node, jacc_print_attr_operand_operator_ast);
+        case JACC_BIN_OP_AST:
+            jacc_auto_indent(indent, node, jacc_print_bin_op);
             break;
-        case JACC_ARG_U:
-            jacc_print_arg_ast(indent, node);
-            break;
-        case JACC_TERNAY_U:
-            jacc_auto_indent(indent, node, jacc_print_ternary_ast);
+        case JACC_TERNARY_AST:
+            jacc_auto_indent(indent, node, jacc_print_ternary);
             break;
         default:
-            exit(1);
+            printf("None\n");
     }
-            */
 }
