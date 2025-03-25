@@ -7,10 +7,6 @@
 void yyerror(const char * s);
 int yylex(void);
 
-jacc_ast_node_t final_ast;
-
-jacc_ast_node_t *test_ast;
-
 extern FILE *yyin;
 
 %}
@@ -114,6 +110,38 @@ extern FILE *yyin;
 %type <ast_p> logical_or_expression
 %type <ast_p> conditional_expression
 %type <ast_p> expression
+%type <ast_p> declaration
+%type <ast_p> declaration_specifiers 
+%type <ast_p> init_declarator_list
+%type <ast_p> storage_class_specificer
+%type <ast_p> type_specifier
+%type <ast_p> type_qualifier
+%type <ast_p> function_specifier
+%type <ast_p> init_declarator
+%type <ast_p> initializer
+%type <ast_p> struct_or_union_specifier
+%type <ast_p> enum_specifier
+%type <ast_p> struct_or_union
+%type <ast_p> struct_declaration_list
+%type <ast_p> specifier_qualifier_list
+%type <ast_p> struct_declarator_list
+%type <ast_p> struct_declarator
+%type <ast_p> declarator
+%type <ast_p> enumerator_list
+%type <ast_p> enumeration_constant
+%type <ast_p> pointer
+%type <ast_p> direct_declarator
+%type <ast_p> type_qualifier_list
+%type <ast_p> parameter_type_list
+%type <ast_p> parameter_list
+%type <ast_p> parameter_declaration
+%type <ast_p> identifier_list
+%type <ast_p> type_name
+%type <ast_p> abstract_declarator
+%type <ast_p> direct_abstract_declarator
+%type <ast_p> initializer_list
+%type <ast_p> designation
+%type <ast_p> designator_list
 %type <ast_p> statement
 
 %start statement
@@ -164,8 +192,8 @@ postfix_expression
     | postfix_expression MINUSMINUS {
         $$ = jacc_alloc_unop(JACC_UN_OP_POSTSUB, '-', $1);
     }
-    // '(' type_name ')' '{' initializer_list '}'
-    // '(' type_name ')' '{' initializer_list, '}'
+    | '(' type_name ')' '{' initializer_list '}'
+    | '(' type_name ')' '{' initializer_list ',' '}'
     ;
 
 argument_expression_list
@@ -199,10 +227,9 @@ unary_expression
     | SIZEOF unary_expression {
         $$ = jacc_alloc_unop(JACC_UN_OP_SIZEOF, SIZEOF, $2);
     }
-    // | SIZEOF '(' type_name ')'
+    | SIZEOF '(' type_name ')'
     ;
 
-// might need to rewrite these
 unary_operator
     : '&' { $$ = lex_alloc_int('&'); }
     | '*' { $$ = lex_alloc_int('*'); }
@@ -214,7 +241,7 @@ unary_operator
 
 cast_expression
     : unary_expression
-//    | '(' type_name ')' cast_expression
+    | '(' type_name ')' cast_expression
     ;
 
 multiplicative_expression
@@ -350,6 +377,10 @@ expression
     }
     ;
 
+constant_expression
+    : conditional_expression
+    ;
+
 statement
     : expression ';' {
         int indent = -1;
@@ -360,6 +391,234 @@ statement
         jacc_print_ast(&indent, $2);
     }
     ;
+
+declaration
+    : declaration_specifiers init_declarator_list
+    | declaration_specifiers
+    ;
+
+declaration_specifiers
+    : storage_class_specificer declaration_specifiers
+    | storage_class_specificer
+    | type_specifier declaration_specifiers
+    | type_specifier
+    | function_specifier declaration_specifiers
+    | function_specifier 
+    ;
+
+init_declarator_list
+    : init_declarator
+    | init_declarator_list ',' init_declarator
+    ;
+
+init_declarator
+    : declarator
+    //| declarator '=' initalizer
+    ;
+
+storage_class_specificer
+    : TYPEDEF
+    | EXTERN
+    | STATIC
+    | AUTO
+    | REGISTER
+    ;
+
+type_specifier
+    : VOID
+    | CHAR
+    | SHORT
+    | INT
+    | LONG
+    | FLOAT
+    | DOUBLE
+    | SIGNED
+    | UNSIGNED
+    | _BOOL
+    | _COMPLEX
+    | struct_or_union_specifier
+    | enum_specifier
+    // | typedef-name
+    ;
+
+struct_or_union_specifier
+    : struct_or_union IDENT '{' struct_declaration_list '}'
+    | struct_or_union '{' struct_declaration_list '}'
+    | struct_or_union IDENT
+    ;
+
+struct_or_union
+    : STRUCT
+    | UNION
+    ;
+
+struct_declaration_list
+    : struct_declaration
+    | struct_declaration_list struct_declaration
+    ;
+
+struct_declaration
+    : specifier_qualifier_list struct_declaration_list ';'
+    ;
+
+specifier_qualifier_list
+    : type_specifier specifier_qualifier_list
+    | type_specifier
+    | type_qualifier specifier_qualifier_list
+    | type_qualifier
+    ;
+
+struct_declarator_list
+    : struct_declarator
+    | struct_declarator_list ',' struct_declarator
+    ;
+
+struct_declarator
+    : declarator
+    | declarator ':' constant_expression
+    | ':' constant_expression
+    ;
+
+enum_specifier
+    : ENUM IDENT '{' enumerator_list '}'
+    | ENUM '{' enumerator_list ',' '}'
+    | ENUM IDENT
+    ;
+
+enumerator_list
+    : enumerator
+    | enumerator_list ',' enumerator
+    ;
+
+enumerator
+    : enumeration_constant
+    | enumeration_constant '=' constant_expression
+    ;
+
+enumeration_constant
+    : IDENT
+    ;
+
+type_qualifier
+    : CONST
+    | RESTRICT
+    | VOLATILE
+    ;
+
+function_specifier
+    : INLINE
+    ;
+
+declarator
+    : pointer direct_declarator
+    | direct_declarator
+    ;
+
+direct_declarator
+    : IDENT
+    | '{' declarator '}'
+    | direct_declarator '[' type_qualifier_list assignment_expression']'
+    | direct_declarator '[' assignment_expression']'
+    | direct_declarator '[' type_qualifier_list ']'
+    | direct_declarator '[' ']'
+    | direct_declarator '[' STATIC type_qualifier_list assignment_expression']'
+    | direct_declarator '[' STATIC assignment_expression']'
+    | direct_declarator '[' type_qualifier_list STATIC assignment_expression']'
+    | direct_declarator '[' type_qualifier_list '*' ']'
+    | direct_declarator '[' '*' ']'
+    | direct_declarator '[' parameter_type_list ']'
+    | direct_declarator '[' identifier_list ']'
+    | direct_declarator '[' ']'
+    ;
+
+pointer
+    : '*' type_qualifier_list
+    | '*'
+    | '*' type_qualifier_list '*'
+    | '*' '*'
+    ;
+
+type_qualifier_list
+    : type_qualifier
+    | type_qualifier_list type_qualifier
+    ;
+
+parameter_type_list
+    : parameter_list 
+    | parameter_list ',' ELLIPSIS
+    ;
+
+parameter_list
+    : parameter_declaration
+    | parameter_list ',' parameter_declaration
+    ;
+
+parameter_declaration
+    : declaration_specifiers declarator
+    | declaration_specifiers abstract_declarator
+    | declaration_specifiers
+    ;
+
+identifier_list
+    : IDENT
+    | identifier_list ',' IDENT
+    ;
+
+type_name
+    : specifier_qualifier_list abstract_declarator
+    | specifier_qualifier_list
+    ;
+
+abstract_declarator
+    : pointer
+    | pointer direct_abstract_declarator
+    | direct_abstract_declarator
+    ;
+
+direct_abstract_declarator
+    : '(' abstract_declarator ')'
+    | direct_abstract_declarator '[' assignment_expression ']'
+    | direct_abstract_declarator '[' ']'
+    | '[' assignment_expression ']'
+    | '[' ']'
+    | direct_abstract_declarator '[' '*' ']'
+    | '[' '*' ']'
+    | direct_abstract_declarator '(' parameter_type_list ')'
+    | direct_abstract_declarator '(' ')' 
+    | '(' parameter_type_list ')'
+    | '(' ')'
+    ;
+
+//typedef_name
+//  : IDENT
+
+initializer
+    : assignment_expression
+    | '{' initializer_list '}'
+    | '{' initializer_list ',' '}'
+    ;
+
+initializer_list
+    : designation initializer
+    | initializer
+    | initializer_list ',' designation initializer
+    | initializer_list ',' initializer
+    ;
+
+designation
+    : designator_list '='
+    ;
+
+designator_list
+    : designator
+    | designator_list designator
+    ;
+
+designator
+    : '[' constant_expression ']'
+    | '.' IDENT
+    ;
+
 
 %%
 
