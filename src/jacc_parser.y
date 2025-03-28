@@ -436,11 +436,12 @@ type_specifier
     | UNSIGNED
     | _BOOL
     | _COMPLEX
-    | struct_or_union_specifier
-    | enum_specifier
+    //| struct_or_union_specifier
+    //| enum_specifier
     // | typedef-name
     ;
 
+/*
 struct_or_union_specifier
     : struct_or_union IDENT '{' struct_declaration_list '}'
     | struct_or_union '{' struct_declaration_list '}'
@@ -460,6 +461,7 @@ struct_declaration_list
 struct_declaration
     : specifier_qualifier_list struct_declaration_list ';'
     ;
+*/
 
 specifier_qualifier_list
     : type_specifier specifier_qualifier_list
@@ -468,6 +470,7 @@ specifier_qualifier_list
     | type_qualifier
     ;
 
+/*
 struct_declarator_list
     : struct_declarator
     | struct_declarator_list ',' struct_declarator
@@ -498,6 +501,7 @@ enumerator
 enumeration_constant
     : IDENT
     ;
+*/
 
 type_qualifier
     : CONST
@@ -505,9 +509,11 @@ type_qualifier
     | VOLATILE
     ;
 
+/*
 function_specifier
     : INLINE
     ;
+*/
 
 declarator
     : pointer direct_declarator

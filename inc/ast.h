@@ -14,7 +14,8 @@ typedef enum jacc_ast_type {
     JACC_ARGS_AST,
     JACC_UN_OP_AST,
     JACC_BIN_OP_AST,
-    JACC_TERNARY_AST
+    JACC_TERNARY_AST,
+    JACC_STG_CLS_AST
 } jacc_ast_type_t;
 
 typedef enum jacc_un_op_type {
@@ -26,7 +27,7 @@ typedef enum jacc_un_op_type {
     JACC_UN_OP_POSTSUB
 } jacc_un_op_type_t;
 
-typedef enum jacc_bin_op_ast_type {
+typedef enum jacc_bin_op_type {
     JACC_BIN_OP_STD,
     JACC_BIN_OP_ASSIGN,
     JACC_BIN_OP_ASSIGN_COMP,
@@ -35,6 +36,36 @@ typedef enum jacc_bin_op_ast_type {
     JACC_BIN_OP_SELECT,
     JACC_BIN_OP_SELECT_INDIR
 } jacc_bin_op_type_t;
+
+typedef enum jacc_stg_cls_type {
+    JACC_STG_CLS_TYPEDEF,
+    JACC_STG_CLS_EXTERN,
+    JACC_STG_CLS_STATIC,
+    JACC_STG_CLS_AUTO,
+    JACC_STG_CLS_REGISTER
+} jacc_stg_cls_type_t;
+
+typedef enum jacc_type_spec_type {
+    JACC_TYPE_SPEC_VOID,
+    JACC_TYPE_SPEC_CHAR,
+    JACC_TYPE_SPEC_SHORT,
+    JACC_TYPE_SPEC_INT,
+    JACC_TYPE_SPEC_LONG,
+    JACC_TYPE_SPEC_FLOAT,
+    JACC_TYPE_SPEC_DOUBLE,
+    JACC_TYPE_SPEC_SIGNED,
+    JACC_TYPE_SPEC_UNSIGNED,
+    JACC_TYPE_SPEC__BOOL,
+    JACC_TYPE_SPEC__COMPLEX,
+    JACC_TYPE_SPEC_STRUCT_OR_UNION,
+    JACC_TYPE_SPEC_ENUM
+} jacc_type_spec_type_t;
+
+typedef enum jacc_type_qual_type {
+    JACC_TYPE_QUAL_CONST,
+    JACC_TYPE_QUAL_RESTRICT,
+    JACC_TYPE_QUAL_VOLATILE
+} jacc_type_qual_type_t;
 
 typedef struct jacc_func_ast {
     struct jacc_ast_node *func;
@@ -53,7 +84,6 @@ typedef struct jacc_un_op_ast {
     struct jacc_ast_node *operand;
 } jacc_un_op_ast_t;
 
-
 typedef struct jacc_bin_op_ast {
     jacc_bin_op_type_t b_type;
     int operator;
@@ -67,17 +97,30 @@ typedef struct jacc_ternary_ast {
     struct jacc_ast_node *f_op;
 } jacc_ternary_ast_t;
 
+typedef struct jacc_stg_cls_spec_ast {
+    jacc_stg_cls_type_t type;
+} jacc_stg_cls_spec_ast_t;
+
+typedef struct jacc_type_spec_ast {
+    jacc_type_spec_type_t type;
+} jacc_type_spec_ast_t;
+
+typedef struct jacc_type_qual_ast {
+    jacc_type_qual_type_t type;
+} jacc_type_qual_ast_t;
 
 typedef struct jacc_ast_node {
     jacc_ast_type_t ast_type;
 
     union {
-        jacc_lex_tok_t      lex;
-        jacc_func_ast_t     func;
-        jacc_args_ast_t     args;
-        jacc_un_op_ast_t    unop;
-        jacc_bin_op_ast_t   binop;
-        jacc_ternary_ast_t  tern;
+        jacc_lex_tok_t          lex;
+        jacc_func_ast_t         func;
+        jacc_args_ast_t         args;
+        jacc_un_op_ast_t        unop;
+        jacc_bin_op_ast_t       binop;
+        jacc_ternary_ast_t      tern;
+        jacc_stg_cls_spec_ast_t stg_cls_spec;
+        jacc_type_spec_ast_t    type_spec;
     };
 
 } jacc_ast_node_t;
