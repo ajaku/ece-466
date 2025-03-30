@@ -15,7 +15,16 @@ typedef enum jacc_ast_type {
     JACC_UN_OP_AST,
     JACC_BIN_OP_AST,
     JACC_TERNARY_AST,
-    JACC_STG_CLS_AST
+    JACC_STG_CLS_AST,
+    JACC_TYPE_SPEC_AST,
+    JACC_TYPE_QUAL_LIST_AST,
+    JACC_DECLARATION_SPEC_AST,
+    JACC_STRUCT_OR_UNION_SPEC_AST,
+    //
+    JACC_SPEC_QUAL_LIST_AST,
+    JACC_DECLARATOR_AST,
+    JACC_DIRECT_DECLARATOR_AST,
+    JACC_POINTER_AST
 } jacc_ast_type_t;
 
 typedef enum jacc_un_op_type {
@@ -67,6 +76,11 @@ typedef enum jacc_type_qual_type {
     JACC_TYPE_QUAL_VOLATILE
 } jacc_type_qual_type_t;
 
+typedef enum jacc_struct_or_union_spec_type {
+    JACC_STRUCT_SPEC,
+    JACC_UNION_SPEC
+} jacc_struct_or_union_spec_type_t;
+
 typedef struct jacc_func_ast {
     struct jacc_ast_node *func;
     struct jacc_ast_node *args;
@@ -103,35 +117,153 @@ typedef struct jacc_stg_cls_spec_ast {
 
 typedef struct jacc_type_spec_ast {
     jacc_type_spec_type_t type;
+    union {
+        struct jacc_ast_node *struct_or_union_spec;
+        struct jacc_ast_node *enum_spec;
+    };
 } jacc_type_spec_ast_t;
 
 typedef struct jacc_type_qual_ast {
     jacc_type_qual_type_t type;
+    unsigned *n_type_quals;
+    struct jacc_ast_node *list_head;
+    struct jacc_ast_node *next_type_qual;
 } jacc_type_qual_ast_t;
+
+typedef struct jacc_declaration_spec_ast {
+    struct jacc_ast_node *stg_cls_spec;
+    struct jacc_ast_node *declaration_spec;
+    struct jacc_ast_node *type_spec;
+} jacc_declaration_spec_ast_t;
+
+typedef struct jacc_struct_or_union_spec_ast {
+    jacc_struct_or_union_spec_type_t type;
+    struct jacc_ast_node *ident;
+    struct jacc_ast_node *struct_declaration_list;
+} jacc_struct_or_union_spec_ast_t;
+
+/* Deviating a bit from the standard here
+- Rather than having a struct_declaration_list and a seperate struct_declaration,
+I'll have a struct_declaration that is a list, like the args_ast earlier
+*/
+
+// Each struct_declaration has its own qualifiers
+typedef struct jacc_struct_declaration_ast {
+    unsigned *n_struct_declarations;
+    struct jacc_ast_node *specifier_qual_list;
+    struct jacc_ast_node *cur_struct_declaration;
+    struct jacc_ast_node *next_struct_declaration;
+} jacc_struct_declaration_ast_t;
+
+typedef struct jacc_spec_qual_list_ast {
+    unsigned *n_spec_quals;
+
+    struct jacc_ast_node *list_head;
+
+    struct jacc_ast_node *type_spec; // should never have both at same time (could be union)
+    struct jacc_ast_node *type_qual; // should never have both at same time (could be union)
+    struct jacc_ast_node *next_spec_qual;
+} jacc_spec_qual_list_ast_t;
+
+// declarators now
+typedef struct jacc_declarator_ast {
+    struct jacc_ast_node *pointer;
+    struct jacc_ast_node *direct_declarator;
+} jacc_declarator_ast_t;
+
+typedef struct jacc_direct_declarator_ast {
+    struct jacc_ast_node *ident;
+    struct jacc_ast_node *declarator;
+    struct jacc_ast_node *direct_declarator;
+    struct jacc_ast_node *number;
+} jacc_direct_declarator_ast_t;
+
+typedef struct jacc_pointer_ast {
+    struct jacc_ast_node *type_qual_list;
+    struct jaccc_ast_node *pointer;
+} jacc_pointer_ast_t;
 
 typedef struct jacc_ast_node {
     jacc_ast_type_t ast_type;
 
     union {
-        jacc_lex_tok_t          lex;
-        jacc_func_ast_t         func;
-        jacc_args_ast_t         args;
-        jacc_un_op_ast_t        unop;
-        jacc_bin_op_ast_t       binop;
-        jacc_ternary_ast_t      tern;
-        jacc_stg_cls_spec_ast_t stg_cls_spec;
-        jacc_type_spec_ast_t    type_spec;
+        jacc_lex_tok_t                      lex;
+        jacc_func_ast_t                     func;
+        jacc_args_ast_t                     args;
+        jacc_un_op_ast_t                    unop;
+        jacc_bin_op_ast_t                   binop;
+        jacc_ternary_ast_t                  tern;
+        jacc_stg_cls_spec_ast_t             stg_cls_spec;
+        jacc_type_spec_ast_t                type_spec;
+        jacc_type_qual_ast_t                type_qual_list;
+        jacc_declaration_spec_ast_t         declaration_spec;
+        jacc_struct_or_union_spec_ast_t     struct_or_union_spec;
+        //
+        jacc_spec_qual_list_ast_t           spec_qual_list;
+        //
+        jacc_declarator_ast_t               declarator;
+        jacc_direct_declarator_ast_t        direct_declarator;
+        jacc_pointer_ast_t                  pointer;
     };
 
 } jacc_ast_node_t;
 
-jacc_ast_node_t* jacc_alloc_base(jacc_ast_type_t type, jacc_lex_tok_t lex);
-jacc_ast_node_t* jacc_alloc_func(jacc_ast_node_t *func, jacc_ast_node_t *args);
-jacc_ast_node_t* jacc_alloc_args(jacc_ast_node_t *arg);
-jacc_ast_node_t* jacc_alloc_unop(jacc_un_op_type_t u_type, int operator, jacc_ast_node_t *operand);
-jacc_ast_node_t* jacc_alloc_binop(jacc_bin_op_type_t b_type, int operator, jacc_ast_node_t *left, jacc_ast_node_t *right);
-jacc_ast_node_t* jacc_alloc_ternary(jacc_ast_node_t *cond, jacc_ast_node_t *t_op, jacc_ast_node_t *f_op);
+jacc_ast_node_t* jacc_alloc_base(jacc_ast_type_t type,
+                                 jacc_lex_tok_t lex);
 
-jacc_ast_node_t* jacc_append_arg(jacc_ast_node_t *arg_list, jacc_ast_node_t *next_arg);
+jacc_ast_node_t* jacc_alloc_func(jacc_ast_node_t *func,
+                                 jacc_ast_node_t *args);
+
+jacc_ast_node_t* jacc_alloc_args(jacc_ast_node_t *arg);
+
+jacc_ast_node_t* jacc_alloc_unop(jacc_un_op_type_t u_type,
+                                 int operator,
+                                 jacc_ast_node_t *operand);
+
+jacc_ast_node_t* jacc_alloc_binop(jacc_bin_op_type_t b_type,
+                                  int operator,
+                                  jacc_ast_node_t *left,
+                                  jacc_ast_node_t *right);
+
+jacc_ast_node_t* jacc_alloc_ternary(jacc_ast_node_t *cond, 
+                                    jacc_ast_node_t *t_op,
+                                    jacc_ast_node_t *f_op);
+
+jacc_ast_node_t* jacc_alloc_stg_cls_spec(jacc_stg_cls_type_t type);
+
+jacc_ast_node_t* jacc_alloc_type_spec(jacc_type_spec_type_t type,
+                                      jacc_ast_node_t *spec);
+
+jacc_ast_node_t* jacc_alloc_type_qual(jacc_type_qual_type_t type);
+
+jacc_ast_node_t* jacc_alloc_declaration_spec(jacc_ast_node_t *stg_cls_spec, 
+                                             jacc_ast_node_t *declaration_spec,
+                                             jacc_ast_node_t *type_spec);
+
+jacc_ast_node_t* jacc_alloc_struct_or_union_spec(jacc_struct_or_union_spec_type_t type,
+                                                 jacc_ast_node_t *ident,
+                                                 jacc_ast_node_t *struct_declaration_list);
+
+jacc_ast_node_t* jacc_alloc_spec_qual_list(jacc_ast_node_t *type_spec,
+                                           jacc_ast_node_t *type_qual);
+
+jacc_ast_node_t* jacc_alloc_declarator(jacc_ast_node_t *pointer,
+                                       jacc_ast_node_t *direct_declarator);
+
+jacc_ast_node_t* jacc_alloc_pointer(jacc_ast_node_t *type_qual_list);
+
+
+jacc_ast_node_t* jacc_append_pointer(jacc_ast_node_t *type_qual_list, 
+                                     jacc_ast_node_t *pointer);
+
+jacc_ast_node_t* jacc_append_type_qual_list(jacc_ast_node_t *type_qual_list,
+                                            jacc_ast_node_t *type_qual);
+
+jacc_ast_node_t* jacc_append_spec_qual_list(jacc_ast_node_t *spec_qual_list,
+                                            jacc_ast_node_t *type_spec,
+                                            jacc_ast_node_t *type_qual);
+
+jacc_ast_node_t* jacc_append_arg(jacc_ast_node_t *arg_list,
+                                 jacc_ast_node_t *next_arg);
 
 void jacc_print_ast(int *ident, jacc_ast_node_t *ast);

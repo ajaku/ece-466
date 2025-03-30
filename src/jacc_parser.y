@@ -112,39 +112,42 @@ extern FILE *yyin;
 %type <ast_p> expression
 %type <ast_p> declaration
 %type <ast_p> declaration_specifiers 
-%type <ast_p> init_declarator_list
+//%type <ast_p> init_declarator_list
 %type <ast_p> storage_class_specificer
 %type <ast_p> type_specifier
 %type <ast_p> type_qualifier
-%type <ast_p> function_specifier
-%type <ast_p> init_declarator
-%type <ast_p> initializer
+// %type <ast_p> function_specifier
+//%type <ast_p> init_declarator
+// %type <ast_p> initializer
 %type <ast_p> struct_or_union_specifier
-%type <ast_p> enum_specifier
-%type <ast_p> struct_or_union
+// %type <ast_p> enum_specifier
+%type <tok> struct_or_union
+%type <ast_p> struct_declaration
 %type <ast_p> struct_declaration_list
 %type <ast_p> specifier_qualifier_list
-%type <ast_p> struct_declarator_list
-%type <ast_p> struct_declarator
+// %type <ast_p> struct_declarator_list
+// %type <ast_p> struct_declarator
 %type <ast_p> declarator
-%type <ast_p> enumerator_list
-%type <ast_p> enumeration_constant
+// %type <ast_p> enumerator_list
+// %type <ast_p> enumeration_constant
 %type <ast_p> pointer
 %type <ast_p> direct_declarator
 %type <ast_p> type_qualifier_list
-%type <ast_p> parameter_type_list
-%type <ast_p> parameter_list
-%type <ast_p> parameter_declaration
-%type <ast_p> identifier_list
-%type <ast_p> type_name
-%type <ast_p> abstract_declarator
-%type <ast_p> direct_abstract_declarator
-%type <ast_p> initializer_list
-%type <ast_p> designation
-%type <ast_p> designator_list
+// %type <ast_p> parameter_type_list
+// %type <ast_p> parameter_list
+// %type <ast_p> parameter_declaration
+// %type <ast_p> identifier_list
+// %type <ast_p> type_name
+//%type <ast_p> abstract_declarator
+//%type <ast_p> direct_abstract_declarator
+// %type <ast_p> initializer_list
+// %type <ast_p> designation
+// %type <ast_p> designator_list
 %type <ast_p> statement
 
-%start statement
+// %start statement
+//%start  declaration
+%start type_qualifier_list
 
 %%
 
@@ -192,8 +195,8 @@ postfix_expression
     | postfix_expression MINUSMINUS {
         $$ = jacc_alloc_unop(JACC_UN_OP_POSTSUB, '-', $1);
     }
-    | '(' type_name ')' '{' initializer_list '}'
-    | '(' type_name ')' '{' initializer_list ',' '}'
+    // | '(' type_name ')' '{' initializer_list '}'
+    // | '(' type_name ')' '{' initializer_list ',' '}'
     ;
 
 argument_expression_list
@@ -227,7 +230,10 @@ unary_expression
     | SIZEOF unary_expression {
         $$ = jacc_alloc_unop(JACC_UN_OP_SIZEOF, SIZEOF, $2);
     }
-    | SIZEOF '(' type_name ')'
+    // Double check this
+    //| SIZEOF '(' type_name ')' {
+    //    $$ = jacc_alloc_unop(JACC_UN_OP_SIZEOF, SIZEOF, $3);
+    //}
     ;
 
 unary_operator
@@ -241,7 +247,8 @@ unary_operator
 
 cast_expression
     : unary_expression
-    | '(' type_name ')' cast_expression
+    // Placeholder
+    //| '(' type_name ')' cast_expression { $$ = $2; }
     ;
 
 multiplicative_expression
@@ -392,20 +399,34 @@ statement
     }
     ;
 
+// declarations are the types / stuff before the variable
 declaration
-    : declaration_specifiers init_declarator_list
-    | declaration_specifiers
+    // : declaration_specifiers init_declarator_list
+    : declaration_specifiers {
+        $$ = $1; 
+        jacc_ast_node_t *temp = $$;
+        printf("Created a declaration\n");
+    }
     ;
 
 declaration_specifiers
-    : storage_class_specificer declaration_specifiers
-    | storage_class_specificer
-    | type_specifier declaration_specifiers
-    | type_specifier
-    | function_specifier declaration_specifiers
-    | function_specifier 
+    : storage_class_specificer declaration_specifiers {
+        $$ = jacc_alloc_declaration_spec($1, $2, NULL);
+    }
+    | storage_class_specificer {
+        $$ = jacc_alloc_declaration_spec($1, NULL, NULL);
+    }
+    | type_specifier declaration_specifiers {
+        $$ = jacc_alloc_declaration_spec(NULL, $2, $1);
+    }
+    | type_specifier {
+        $$ = jacc_alloc_declaration_spec(NULL, NULL, $1);
+    }
+    // | function_specifier declaration_specifiers
+    // | function_specifier 
     ;
 
+/*
 init_declarator_list
     : init_declarator
     | init_declarator_list ',' init_declarator
@@ -415,37 +436,65 @@ init_declarator
     : declarator
     //| declarator '=' initalizer
     ;
+*/
 
 storage_class_specificer
-    : TYPEDEF
-    | EXTERN
-    | STATIC
-    | AUTO
-    | REGISTER
+    : TYPEDEF   { $$ = jacc_alloc_stg_cls_spec(JACC_STG_CLS_TYPEDEF);   }
+    | EXTERN    { $$ = jacc_alloc_stg_cls_spec(JACC_STG_CLS_EXTERN);    }
+    | STATIC    { $$ = jacc_alloc_stg_cls_spec(JACC_STG_CLS_STATIC);    }
+    | AUTO      { $$ = jacc_alloc_stg_cls_spec(JACC_STG_CLS_AUTO);      }
+    | REGISTER  { $$ = jacc_alloc_stg_cls_spec(JACC_STG_CLS_REGISTER);  }
     ;
 
 type_specifier
-    : VOID
-    | CHAR
-    | SHORT
-    | INT
-    | LONG
-    | FLOAT
-    | DOUBLE
-    | SIGNED
-    | UNSIGNED
-    | _BOOL
-    | _COMPLEX
-    //| struct_or_union_specifier
+    : VOID      { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_VOID, NULL);       }
+    | CHAR      { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_CHAR, NULL);       }
+    | SHORT     { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_SHORT, NULL);      }
+    | INT       { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_INT, NULL);        }
+    | LONG      { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_LONG, NULL);       }
+    | FLOAT     { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_FLOAT, NULL);      }
+    | DOUBLE    { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_DOUBLE, NULL);     }
+    | SIGNED    { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_SIGNED, NULL);     }
+    | UNSIGNED  { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_UNSIGNED, NULL);   }
+    | _BOOL     { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC__BOOL, NULL);      }
+    | _COMPLEX  { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC__COMPLEX, NULL);   }
+    | struct_or_union_specifier {
+        $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_STRUCT_OR_UNION, $1);
+    }
     //| enum_specifier
     // | typedef-name
     ;
 
-/*
 struct_or_union_specifier
-    : struct_or_union IDENT '{' struct_declaration_list '}'
-    | struct_or_union '{' struct_declaration_list '}'
-    | struct_or_union IDENT
+    : struct_or_union IDENT '{' struct_declaration_list '}' {
+        jacc_lex_tok_t struct_or_union_tok = $1;
+        jacc_struct_or_union_spec_type_t type = JACC_STRUCT_SPEC;
+        if (!strcmp(struct_or_union_tok.data.string_d, "UNION")) {
+            type = JACC_UNION_SPEC;
+        }
+        jacc_ast_node_t *ident = jacc_alloc_base(JACC_IDENT_AST, $1);
+
+        $$ = jacc_alloc_struct_or_union_spec(s_or_u, ident, $4); 
+    }
+    | struct_or_union '{' struct_declaration_list '}' {
+        jacc_lex_tok_t struct_or_union_tok = $1;
+        jacc_struct_or_union_spec_type_t type = JACC_STRUCT_SPEC;
+        if (!strcmp(struct_or_union_tok.data.string_d, "UNION")) {
+            type = JACC_UNION_SPEC;
+        }
+
+        $$ = jacc_alloc_struct_or_union_spec(type, NULL, $3); 
+    }
+    | struct_or_union IDENT {
+        jacc_lex_tok_t struct_or_union_tok = $1;
+        jacc_struct_or_union_spec_type_t type = JACC_STRUCT_SPEC;
+        if (!strcmp(struct_or_union_tok.data.string_d, "UNION")) {
+            type = JACC_UNION_SPEC;
+        }
+
+        jacc_ast_node_t *ident = jacc_alloc_base(JACC_IDENT_AST, $1);
+        $$ = jacc_alloc_struct_or_union_spec(type, ident, NULL); 
+    }
     ;
 
 struct_or_union
@@ -461,13 +510,21 @@ struct_declaration_list
 struct_declaration
     : specifier_qualifier_list struct_declaration_list ';'
     ;
-*/
 
+// order of specifiers gets flipped
 specifier_qualifier_list
-    : type_specifier specifier_qualifier_list
-    | type_specifier
-    | type_qualifier specifier_qualifier_list
-    | type_qualifier
+    : type_specifier specifier_qualifier_list {
+        $$ = jacc_append_spec_qual_list($2, $1, NULL);
+    }
+    | type_specifier {
+        $$ = jacc_alloc_spec_qual_list($1, NULL);
+    }
+    | type_qualifier specifier_qualifier_list {
+        $$ = jacc_append_spec_qual_list($2, NULL, $1);
+    }
+    | type_qualifier {
+        $$ = jacc_alloc_spec_qual_list(NULL, $1);
+    }
     ;
 
 /*
@@ -504,9 +561,9 @@ enumeration_constant
 */
 
 type_qualifier
-    : CONST
-    | RESTRICT
-    | VOLATILE
+    : CONST     { printf("Hi\n"); $$ = jacc_alloc_type_qual(JACC_TYPE_QUAL_CONST);      }
+    | RESTRICT  { $$ = jacc_alloc_type_qual(JACC_TYPE_QUAL_RESTRICT);   }
+    | VOLATILE  { $$ = jacc_alloc_type_qual(JACC_TYPE_QUAL_VOLATILE);   }
     ;
 
 /*
@@ -515,40 +572,78 @@ function_specifier
     ;
 */
 
+// declarators are the variables / stuff after the declaration
 declarator
-    : pointer direct_declarator
-    | direct_declarator
+    : pointer direct_declarator {
+        $$ = jacc_alloc_declarator($1, $2);
+    }
+    | direct_declarator {
+        $$ = jacc_alloc_declarator(NULL, $1);
+    }
     ;
 
+// Have simple declarators (int a - where a is the declarator)
+// Have more complicated ones like (int *x[])
+// Going to simplify them for now
 direct_declarator
-    : IDENT
-    | '{' declarator '}'
-    | direct_declarator '[' type_qualifier_list assignment_expression']'
-    | direct_declarator '[' assignment_expression']'
-    | direct_declarator '[' type_qualifier_list ']'
-    | direct_declarator '[' ']'
-    | direct_declarator '[' STATIC type_qualifier_list assignment_expression']'
-    | direct_declarator '[' STATIC assignment_expression']'
-    | direct_declarator '[' type_qualifier_list STATIC assignment_expression']'
-    | direct_declarator '[' type_qualifier_list '*' ']'
-    | direct_declarator '[' '*' ']'
-    | direct_declarator '[' parameter_type_list ']'
-    | direct_declarator '[' identifier_list ']'
-    | direct_declarator '[' ']'
+    : IDENT {
+        $$ = jacc_alloc_direct_declarator(ident, NULL, NULL, NULL);
+    }
+    | '{' declarator '}' {
+        $$ = jacc_alloc_direct_declarator(NULL, $2, NULL, NULL);
+    }
+    // | direct_declarator '[' type_qualifier_list assignment_expression']'
+    // | direct_declarator '[' assignment_expression']'
+    // | direct_declarator '[' type_qualifier_list ']'
+    // | direct_declarator '[' ']'
+    // | direct_declarator '[' STATIC type_qualifier_list assignment_expression']'
+    // | direct_declarator '[' STATIC assignment_expression']'
+    // | direct_declarator '[' type_qualifier_list STATIC assignment_expression']'
+    // | direct_declarator '[' type_qualifier_list '*' ']'
+    // | direct_declarator '[' '*' ']'
+    // | direct_declarator '[' parameter_type_list ']'
+    // | direct_declarator '[' identifier_list ']'
+    | direct_declarator '[' ']' {
+        $$ = jacc_alloc_direct_declarator(NULL, NULL, $1, NULL);
+    }
+    | direct_declarator '[' NUMBER ']' {
+        $$ = jacc_alloc_direct_declarator(NULL, NULL, $1, $3);
+    }
     ;
 
 pointer
-    : '*' type_qualifier_list
-    | '*'
-    | '*' type_qualifier_list '*'
-    | '*' '*'
+    : '*' type_qualifier_list {
+        // $$ = jacc_alloc_pointer($2);
+        jacc_ast_node_t *test = $2;
+        printf("hi\n");
+    }
+    | '*' {
+        // $$ = jacc_alloc_pointer(NULL);
+    }
+    | '*' type_qualifier_list pointer {
+        // $$ = jacc_append_pointer($2, $3);
+        jacc_ast_node_t *test = $2;
+        printf("hi\n");
+    }
+    | '*' pointer { 
+        // $$ = jacc_append_pointer(NULL, $3);
+        jacc_ast_node_t *test = $2;
+        printf("hi\n");
+    }
     ;
 
 type_qualifier_list
     : type_qualifier
-    | type_qualifier_list type_qualifier
+    | type_qualifier_list type_qualifier {
+        jacc_ast_node_t *a1 = $1;
+        jacc_ast_node_t *a2 = $2;
+        $$ = jacc_append_type_qual_list($1, $2);
+        jacc_ast_node_t *test = $$;
+        printf("hi\n");
+    }
     ;
 
+/*
 parameter_type_list
     : parameter_list 
     | parameter_list ',' ELLIPSIS
@@ -570,17 +665,24 @@ identifier_list
     | identifier_list ',' IDENT
     ;
 
+/*
 type_name
     : specifier_qualifier_list abstract_declarator
     | specifier_qualifier_list
     ;
+*/
 
+/*
 abstract_declarator
     : pointer
     | pointer direct_abstract_declarator
     | direct_abstract_declarator
     ;
+*/
 
+// Same as normal declarators, except don't have ident
+// Ex: (int **[])
+/*
 direct_abstract_declarator
     : '(' abstract_declarator ')'
     | direct_abstract_declarator '[' assignment_expression ']'
@@ -594,10 +696,12 @@ direct_abstract_declarator
     | '(' parameter_type_list ')'
     | '(' ')'
     ;
+*/
 
 //typedef_name
 //  : IDENT
 
+/*
 initializer
     : assignment_expression
     | '{' initializer_list '}'
@@ -624,6 +728,7 @@ designator
     : '[' constant_expression ']'
     | '.' IDENT
     ;
+*/
 
 
 %%
