@@ -12,8 +12,24 @@ extern FILE *yyin;
 %}
 
 %union {
-    struct jacc_lex_tok tok;
-    struct jacc_ast_node *ast_p;
+    // Actually returned by lexer
+    struct jacc_lex_tok                      tok;
+    struct jacc_ast_node                     *ast_p; // final type should resolve to ast node
+
+    // Internal representations
+    struct jacc_stg_cls_spec_ast             *stg_cls_spec_p;
+    struct jacc_type_spec_ast                *type_spec_p;
+    struct jacc_type_qual_ast                *type_qual_p;
+    struct jacc_type_qual_list_ast           *type_qual_list_p;
+    struct jacc_declaration_spec_ast         *declaration_spec_p;
+    struct jacc_struct_or_union_spec_ast     *struct_or_union_spec_p;
+    struct jacc_spec_qual_list_ast           *spec_qual_list_p;
+    struct jacc_declarator_ast               *declarator_p;
+    struct jacc_direct_declarator_ast        *direct_declarator_p;
+    struct jacc_pointer_ast                  *pointer_p;
+    struct jacc_init_declarator_ast          *init_declarator_p;
+    struct jacc_init_declarator_list_ast     *init_declarator_list_p;
+    struct jacc_declaration_ast              *declaration_p;
 }
 
 %token <tok> IDENT
@@ -110,29 +126,29 @@ extern FILE *yyin;
 %type <ast_p> logical_or_expression
 %type <ast_p> conditional_expression
 %type <ast_p> expression
-%type <ast_p> declaration
-%type <ast_p> declaration_specifiers 
-//%type <ast_p> init_declarator_list
-%type <ast_p> storage_class_specificer
-%type <ast_p> type_specifier
-%type <ast_p> type_qualifier
+%type <declaration_p> declaration
+%type <declaration_spec_p> declaration_specifiers 
+%type <init_declarator_list_p> init_declarator_list
+%type <stg_cls_spec_p> storage_class_specificer
+%type <type_spec_p> type_specifier
+%type <type_qual_p> type_qualifier
 // %type <ast_p> function_specifier
-//%type <ast_p> init_declarator
+%type <init_declarator_p> init_declarator
 // %type <ast_p> initializer
-%type <ast_p> struct_or_union_specifier
+// %type <struct_or_union_spec_p> struct_or_union_specifier
 // %type <ast_p> enum_specifier
-%type <tok> struct_or_union
-%type <ast_p> struct_declaration
-%type <ast_p> struct_declaration_list
-%type <ast_p> specifier_qualifier_list
+// %type <tok> struct_or_union
+// %type <ast_p> struct_declaration
+// %type <ast_p> struct_declaration_list
+%type <spec_qual_list_p> specifier_qualifier_list
 // %type <ast_p> struct_declarator_list
 // %type <ast_p> struct_declarator
-%type <ast_p> declarator
+%type <declarator_p> declarator
 // %type <ast_p> enumerator_list
 // %type <ast_p> enumeration_constant
-%type <ast_p> pointer
-%type <ast_p> direct_declarator
-%type <ast_p> type_qualifier_list
+//%type <pointer_p> pointer
+%type <direct_declarator_p> direct_declarator
+%type <type_qual_list_p> type_qualifier_list
 // %type <ast_p> parameter_type_list
 // %type <ast_p> parameter_list
 // %type <ast_p> parameter_declaration
@@ -147,7 +163,7 @@ extern FILE *yyin;
 
 // %start statement
 //%start  declaration
-%start type_qualifier_list
+%start declaration
 
 %%
 
@@ -401,11 +417,11 @@ statement
 
 // declarations are the types / stuff before the variable
 declaration
-    // : declaration_specifiers init_declarator_list
-    : declaration_specifiers {
-        $$ = $1; 
-        jacc_ast_node_t *temp = $$;
-        printf("Created a declaration\n");
+    : declaration_specifiers { $$ = jacc_alloc_declaration($1, NULL); }
+    | declaration_specifiers init_declarator_list {
+        $$ = jacc_alloc_declaration($1, $2);
+        jacc_declaration_ast_t *test = $$;
+        printf("done\n");
     }
     ;
 
@@ -426,17 +442,17 @@ declaration_specifiers
     // | function_specifier 
     ;
 
-/*
 init_declarator_list
-    : init_declarator
-    | init_declarator_list ',' init_declarator
+    : init_declarator { $$ = jacc_alloc_init_declarator_list($1); }
+    | init_declarator_list ',' init_declarator {
+        $$ = jacc_append_init_declarator_list($1, $3);
+    }
     ;
 
 init_declarator
-    : declarator
+    : declarator { $$ = jacc_alloc_init_declarator($1); }
     //| declarator '=' initalizer
     ;
-*/
 
 storage_class_specificer
     : TYPEDEF   { $$ = jacc_alloc_stg_cls_spec(JACC_STG_CLS_TYPEDEF);   }
@@ -458,13 +474,17 @@ type_specifier
     | UNSIGNED  { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_UNSIGNED, NULL);   }
     | _BOOL     { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC__BOOL, NULL);      }
     | _COMPLEX  { $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC__COMPLEX, NULL);   }
+    /*
     | struct_or_union_specifier {
-        $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_STRUCT_OR_UNION, $1);
+        // FIX THIS LATER!!!
+        $$ = jacc_alloc_type_spec(JACC_TYPE_SPEC_STRUCT_OR_UNION, NULL);
     }
+    */
     //| enum_specifier
     // | typedef-name
     ;
 
+/*
 struct_or_union_specifier
     : struct_or_union IDENT '{' struct_declaration_list '}' {
         jacc_lex_tok_t struct_or_union_tok = $1;
@@ -510,11 +530,14 @@ struct_declaration_list
 struct_declaration
     : specifier_qualifier_list struct_declaration_list ';'
     ;
+    */
 
 // order of specifiers gets flipped
 specifier_qualifier_list
     : type_specifier specifier_qualifier_list {
         $$ = jacc_append_spec_qual_list($2, $1, NULL);
+        jacc_spec_qual_list_ast_t *test = $$;
+        printf("hi\n");
     }
     | type_specifier {
         $$ = jacc_alloc_spec_qual_list($1, NULL);
@@ -561,7 +584,7 @@ enumeration_constant
 */
 
 type_qualifier
-    : CONST     { printf("Hi\n"); $$ = jacc_alloc_type_qual(JACC_TYPE_QUAL_CONST);      }
+    : CONST     { $$ = jacc_alloc_type_qual(JACC_TYPE_QUAL_CONST);      }
     | RESTRICT  { $$ = jacc_alloc_type_qual(JACC_TYPE_QUAL_RESTRICT);   }
     | VOLATILE  { $$ = jacc_alloc_type_qual(JACC_TYPE_QUAL_VOLATILE);   }
     ;
@@ -574,10 +597,12 @@ function_specifier
 
 // declarators are the variables / stuff after the declaration
 declarator
+/*
     : pointer direct_declarator {
         $$ = jacc_alloc_declarator($1, $2);
     }
-    | direct_declarator {
+    */
+    : direct_declarator {
         $$ = jacc_alloc_declarator(NULL, $1);
     }
     ;
@@ -587,6 +612,7 @@ declarator
 // Going to simplify them for now
 direct_declarator
     : IDENT {
+        jacc_ast_node_t *ident = jacc_alloc_base(JACC_IDENT_AST, $1);
         $$ = jacc_alloc_direct_declarator(ident, NULL, NULL, NULL);
     }
     | '{' declarator '}' {
@@ -607,39 +633,36 @@ direct_declarator
         $$ = jacc_alloc_direct_declarator(NULL, NULL, $1, NULL);
     }
     | direct_declarator '[' NUMBER ']' {
-        $$ = jacc_alloc_direct_declarator(NULL, NULL, $1, $3);
+        jacc_ast_node_t *number= jacc_alloc_base(JACC_CONST_AST, $3);
+        $$ = jacc_alloc_direct_declarator(NULL, NULL, $1, number);
     }
     ;
 
+/*
 pointer
     : '*' type_qualifier_list {
-        // $$ = jacc_alloc_pointer($2);
-        jacc_ast_node_t *test = $2;
-        printf("hi\n");
+        $$ = jacc_alloc_pointer($2);
     }
     | '*' {
-        // $$ = jacc_alloc_pointer(NULL);
+        $$ = jacc_alloc_pointer(NULL);
     }
     | '*' type_qualifier_list pointer {
-        // $$ = jacc_append_pointer($2, $3);
-        jacc_ast_node_t *test = $2;
-        printf("hi\n");
+        $$ = jacc_append_pointer($2, $3);
     }
     | '*' pointer { 
-        // $$ = jacc_append_pointer(NULL, $3);
-        jacc_ast_node_t *test = $2;
-        printf("hi\n");
+        $$ = jacc_append_pointer(NULL, $3);
     }
     ;
+    */
 
 type_qualifier_list
-    : type_qualifier
+    : type_qualifier {
+        $$ = jacc_alloc_type_qual_list($1);
+    }
     | type_qualifier_list type_qualifier {
-        jacc_ast_node_t *a1 = $1;
-        jacc_ast_node_t *a2 = $2;
         $$ = jacc_append_type_qual_list($1, $2);
-        jacc_ast_node_t *test = $$;
-        printf("hi\n");
+        jacc_type_qual_list_ast_t *test = $$;
+        printf("Hi\n");
     }
     ;
 

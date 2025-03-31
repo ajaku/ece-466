@@ -106,64 +106,86 @@ jacc_ast_node_t* jacc_alloc_ternary(jacc_ast_node_t *cond,
     return node;
 }
 
-jacc_ast_node_t *jacc_alloc_stg_cls_spec(jacc_stg_cls_type_t type) {
-    jacc_ast_node_t *node = jacc_alloc_node(JACC_STG_CLS_AST);
-    node->stg_cls_spec.type = type;
+// New stuff
 
-    return node;
+jacc_stg_cls_spec_ast_t *jacc_alloc_stg_cls_spec(jacc_stg_cls_type_t type) {
+    jacc_ast_node_t *node = jacc_alloc_node(JACC_STG_CLS_AST);
+    jacc_stg_cls_spec_ast_t *node_stg_cls_spec = &node->stg_cls_spec;
+
+    node_stg_cls_spec->type = type;
+
+    return node_stg_cls_spec;
 }
 
-jacc_ast_node_t* jacc_alloc_type_spec(jacc_type_spec_type_t type,
-                                      jacc_ast_node_t *spec) {
+jacc_type_spec_ast_t* jacc_alloc_type_spec(jacc_type_spec_type_t type,
+                                           jacc_ast_node_t *spec) {
     jacc_ast_node_t *node = jacc_alloc_node(JACC_TYPE_SPEC_AST);
-    node->type_spec.type = type;
+    jacc_type_spec_ast_t *node_type_spec = &node->type_spec;
 
+    node_type_spec->type = type;
+
+    /*
     if (type == JACC_TYPE_SPEC_STRUCT_OR_UNION)
-        node->type_spec.struct_or_union_spec = spec;
+        node_type_spec->struct_or_union_spec = spec;
 
     if (type == JACC_TYPE_SPEC_ENUM)
-        node->type_spec.enum_spec = spec;
+        node_type_spec->enum_spec = spec;
 
-    return node;
+    */
+
+    // Temporary fix (still need to add enum support)
+
+    node_type_spec->struct_or_union_spec = &spec->struct_or_union_spec;
+
+    return node_type_spec;
 }
 
-jacc_ast_node_t* jacc_alloc_type_qual(jacc_type_qual_type_t type) {
+jacc_type_qual_ast_t* jacc_alloc_type_qual(jacc_type_qual_type_t type) {
+    jacc_ast_node_t *node = jacc_alloc_node(JACC_TYPE_QUAL_AST);
+    jacc_type_qual_ast_t *node_type_qual = &node->type_qual;
+
+    node_type_qual->type = type;
+
+    return node_type_qual;
+}
+
+jacc_type_qual_list_ast_t* jacc_alloc_type_qual_list(jacc_type_qual_ast_t *list_head) {
     jacc_ast_node_t *node = jacc_alloc_node(JACC_TYPE_QUAL_LIST_AST);
+    jacc_type_qual_list_ast_t *node_type_qual_list = &node->type_qual_list;
 
     unsigned *n_type_quals = malloc(sizeof(unsigned));
 
-    node->type_qual_list.type = type;
-    node->type_qual_list.n_type_quals = n_type_quals;
-    node->type_qual_list.list_head = node;
+    node_type_qual_list->n_type_quals = n_type_quals;
+    node_type_qual_list->list_head = list_head;
 
-    (*(node->type_qual_list.n_type_quals))++;
+    (*(node_type_qual_list->n_type_quals))++;
 
-    node->type_qual_list.type = type;
-
-    return node;
+    return node_type_qual_list;
 }
 
-jacc_ast_node_t* jacc_alloc_declaration_spec(jacc_ast_node_t *stg_cls_spec, 
-                                             jacc_ast_node_t *declaration_spec,
-                                             jacc_ast_node_t *type_spec) {
+jacc_declaration_spec_ast_t* jacc_alloc_declaration_spec(jacc_stg_cls_spec_ast_t *stg_cls_spec, 
+                                                         jacc_declaration_spec_ast_t *declaration_spec,
+                                                         jacc_type_spec_ast_t *type_spec) {
     jacc_ast_node_t *node = jacc_alloc_node(JACC_DECLARATION_SPEC_AST);
-    node->declaration_spec.stg_cls_spec = stg_cls_spec;
-    node->declaration_spec.declaration_spec = declaration_spec;
-    node->declaration_spec.type_spec = type_spec;
+    jacc_declaration_spec_ast_t *node_declaration_spec = &node->declaration_spec;
 
+    node_declaration_spec->stg_cls_spec = stg_cls_spec;
+    node_declaration_spec->declaration_spec = declaration_spec;
+    node_declaration_spec->type_spec = type_spec;
 
-    return node;
+    return node_declaration_spec;
 }
 
-jacc_ast_node_t* jacc_alloc_struct_or_union_spec(jacc_struct_or_union_spec_type_t type,
-                                                 jacc_ast_node_t *ident,
-                                                 jacc_ast_node_t *struct_declaration_list) {
+jacc_struct_or_union_spec_ast_t* jacc_alloc_struct_or_union_spec(jacc_struct_or_union_spec_type_t type,
+                                                                 jacc_ast_node_t *ident,
+                                                                 jacc_struct_declaration_ast_t *struct_declaration_list) {
     jacc_ast_node_t *node = jacc_alloc_node(JACC_STRUCT_OR_UNION_SPEC_AST);
-    node->struct_or_union_spec.type = type;
-    node->struct_or_union_spec.ident = ident;
-    node->struct_or_union_spec.struct_declaration_list = struct_declaration_list;
+    jacc_struct_or_union_spec_ast_t *node_struct_or_union_spec = &node->struct_or_union_spec;
+    node_struct_or_union_spec->type = type;
+    node_struct_or_union_spec->ident = ident;
+    node_struct_or_union_spec->struct_declaration_list = struct_declaration_list;
 
-    return node;
+    return node_struct_or_union_spec;
 }
 
 /*
@@ -179,76 +201,162 @@ jacc_ast_node_t *jacc_alloc_struct_declaration_list_ast() {
 }
     */
 
-jacc_ast_node_t* jacc_alloc_spec_qual_list(jacc_ast_node_t *type_spec,
-                                           jacc_ast_node_t *type_qual) {
+jacc_spec_qual_list_ast_t* jacc_alloc_spec_qual_list(jacc_type_spec_ast_t *type_spec,
+                                                     jacc_type_qual_ast_t *type_qual) {
     jacc_ast_node_t *node = jacc_alloc_node(JACC_SPEC_QUAL_LIST_AST);
+    jacc_spec_qual_list_ast_t *node_spec_qual_list = &node->spec_qual_list;
 
     unsigned *n_spec_quals = malloc(sizeof(unsigned));
 
-    node->spec_qual_list.n_spec_quals = n_spec_quals;
-    node->spec_qual_list.list_head = node;
-    node->spec_qual_list.type_spec = type_spec;
-    node->spec_qual_list.type_qual = type_qual;
+    jacc_spec_qual_ast_t *spec_qual = malloc(sizeof(jacc_spec_qual_ast_t));
 
-    (*(node->spec_qual_list.n_spec_quals))++;
+    if (type_spec != NULL) spec_qual->type_spec = type_spec;
+    if (type_qual != NULL) spec_qual->type_qual = type_qual;
 
-    return node;
+    node_spec_qual_list->n_spec_quals = n_spec_quals;
+    node_spec_qual_list->list_head = spec_qual;
+
+    (*(node_spec_qual_list->n_spec_quals))++;
+
+    return node_spec_qual_list;
 }
 
-jacc_ast_node_t* jacc_alloc_declarator(jacc_ast_node_t *pointer,
-                                       jacc_ast_node_t *direct_declarator) {
+jacc_declarator_ast_t* jacc_alloc_declarator(jacc_pointer_ast_t *pointer,
+                                             jacc_direct_declarator_ast_t *direct_declarator) {
     jacc_ast_node_t *node = jacc_alloc_node(JACC_DECLARATOR_AST);
+    jacc_declarator_ast_t *node_declarator = &node->declarator;
 
-    node->declarator.pointer = pointer;
-    node->declarator.direct_declarator = direct_declarator;
+    node_declarator->pointer = pointer;
+    node_declarator->direct_declarator = direct_declarator;
 
-    return node;
+    return node_declarator;
 }
 
-jacc_ast_node_t* jacc_alloc_direct_declarator(jacc_ast_node_t *ident,
-                                              jacc_ast_node_t *declarator,
-                                              jacc_ast_node_t *direct_declarator,
-                                              jacc_ast_node_t *number) {
+jacc_direct_declarator_ast_t* jacc_alloc_direct_declarator(jacc_ast_node_t *ident,
+                                                           jacc_declarator_ast_t *declarator,
+                                                           jacc_direct_declarator_ast_t *direct_declarator,
+                                                           jacc_ast_node_t *number) {
     jacc_ast_node_t *node = jacc_alloc_node(JACC_DIRECT_DECLARATOR_AST);
-    node->direct_declarator.ident = ident;
-    node->direct_declarator.declarator = declarator;
-    node->direct_declarator.direct_declarator = direct_declarator;
-    node->direct_declarator.number = number;
+    jacc_direct_declarator_ast_t *node_direct_declarator = &node->direct_declarator;
 
-    return node;
+    node_direct_declarator->ident = ident;
+    node_direct_declarator->declarator = declarator;
+    node_direct_declarator->direct_declarator = direct_declarator;
+    node_direct_declarator->number = number;
+
+    return node_direct_declarator;
 }
 
-jacc_ast_node_t* jacc_alloc_pointer(jacc_ast_node_t *type_qual_list) {
+jacc_pointer_ast_t* jacc_alloc_pointer(jacc_type_qual_list_ast_t *type_qual_list) {
     jacc_ast_node_t *node = jacc_alloc_node(JACC_POINTER_AST);
+    jacc_pointer_ast_t *node_pointer = &node->pointer;
+
+    node_pointer->type_qual_list = type_qual_list;
     
-    //node->pointer.type_qual_list = ident;
-
-    return node;
+    return node_pointer;
 }
 
-jacc_ast_node_t* jacc_append_type_qual_list(jacc_ast_node_t *type_qual_list,
-                                            jacc_ast_node_t *type_qual) {
-    (*(type_qual_list->type_qual_list.n_type_quals))++;
-    type_qual_list->type_qual_list.next_type_qual = type_qual;
+jacc_init_declarator_ast_t* jacc_alloc_init_declarator(jacc_declarator_ast_t *declarator) {
+    jacc_ast_node_t *node = jacc_alloc_node(JACC_INIT_DECLARATOR_AST);
+    jacc_init_declarator_ast_t *node_init_declarator = &node->init_declarator;
 
-    return type_qual;
+    node_init_declarator->declarator = declarator;
+    
+    return node_init_declarator;
 }
 
-jacc_ast_node_t* jacc_append_spec_qual_list(jacc_ast_node_t *spec_qual_list,
-                                            jacc_ast_node_t *type_spec,
-                                            jacc_ast_node_t *type_qual) {
-    jacc_ast_node_t *node = jacc_alloc_node(JACC_SPEC_QUAL_LIST_AST);
+jacc_init_declarator_list_ast_t* jacc_alloc_init_declarator_list(jacc_init_declarator_ast_t *init_declarator) {
+    jacc_ast_node_t *node = jacc_alloc_node(JACC_INIT_DECLARATOR_LIST_AST);
+    jacc_init_declarator_list_ast_t *node_init_declarator_list = &node->init_declarator_list;
 
-    node->spec_qual_list.n_spec_quals = spec_qual_list->spec_qual_list.n_spec_quals;
-    node->spec_qual_list.list_head = spec_qual_list->spec_qual_list.list_head;
-    node->spec_qual_list.type_spec = type_spec;
-    node->spec_qual_list.type_qual = type_qual;
+    unsigned *n_init_declarators = malloc(sizeof(unsigned));
 
-    (*(node->spec_qual_list.n_spec_quals))++;
+    node_init_declarator_list->n_init_declarators = n_init_declarators;
+    node_init_declarator_list->list_head = init_declarator;
 
-    spec_qual_list->spec_qual_list.next_spec_qual = node;
+    (*(node_init_declarator_list->n_init_declarators))++;
+    
+    return node_init_declarator_list;
+}
 
-    return node;
+jacc_declaration_ast_t* jacc_alloc_declaration(jacc_declaration_spec_ast_t *declaration_spec,
+                                               jacc_init_declarator_list_ast_t *init_declarator_list) {
+
+    jacc_ast_node_t *node = jacc_alloc_node(JACC_DECLARATION_AST);
+    jacc_declaration_ast_t *node_declaration = &node->declaration;
+
+    node_declaration->declaration_spec = declaration_spec;
+    node_declaration->init_declarator_list = init_declarator_list;
+    
+    return node_declaration;
+}
+
+
+jacc_init_declarator_list_ast_t* jacc_append_init_declarator_list(jacc_init_declarator_list_ast_t *init_declarator_list,
+                                                                  jacc_init_declarator_ast_t *init_declarator) {
+    (*init_declarator_list->n_init_declarators)++;                                        
+
+    jacc_init_declarator_ast_t **runner = &(init_declarator_list->list_head);
+
+    // iterate from head to the most recent one and append
+    while (*runner != NULL) {
+        runner = &((*runner)->next_init_declarator);
+        // Could assert that sizes match up or look based on n_type_quals
+        // right now I only have it for debugging purposes
+    }
+
+    // runner is now next_type_qual
+    (*runner) = init_declarator;
+    return init_declarator_list;
+}
+
+/*
+jacc_pointer_ast_t *jacc-append_pointer(jacc_type_qual_ast_t *type_qual_list,
+                                        jacc_pointer_ast_t *pointer) {
+
+    (*type_qual_list->n_type_quals)++;                                        
+
+    jacc_type_qual_ast_t **runner = &(type_qual_list->list_head);
+}
+    */
+
+jacc_type_qual_list_ast_t* jacc_append_type_qual_list(jacc_type_qual_list_ast_t *type_qual_list,
+                                                      jacc_type_qual_ast_t *type_qual) {
+    (*type_qual_list->n_type_quals)++;                                        
+
+    jacc_type_qual_ast_t **runner = &(type_qual_list->list_head);
+
+    // iterate from head to the most recent one and append
+    while (*runner != NULL) {
+        runner = &((*runner)->next_type_qual);
+        // Could assert that sizes match up or look based on n_type_quals
+        // right now I only have it for debugging purposes
+    }
+
+    // runner is now next_type_qual
+    (*runner) = type_qual;
+    return type_qual_list;
+}
+
+jacc_spec_qual_list_ast_t* jacc_append_spec_qual_list(jacc_spec_qual_list_ast_t *spec_qual_list,
+                                                      jacc_type_spec_ast_t *type_spec,
+                                                      jacc_type_qual_ast_t *type_qual) {
+    (*spec_qual_list->n_spec_quals)++;
+
+    jacc_spec_qual_ast_t **runner = &(spec_qual_list->list_head);
+
+    while (*runner != NULL) {
+        runner = &((*runner)->next_spec_qual);
+    }
+
+    // check for malloc errors
+    jacc_spec_qual_ast_t *spec_qual = calloc(1, sizeof(jacc_spec_qual_ast_t));
+    spec_qual->type_spec = type_spec;
+    spec_qual->type_qual = type_qual;
+
+    (*runner) = spec_qual;
+
+    return spec_qual_list;
 }
 
 jacc_ast_node_t* jacc_append_arg(jacc_ast_node_t *arg_list, jacc_ast_node_t *next_arg) {

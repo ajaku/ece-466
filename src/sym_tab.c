@@ -162,7 +162,7 @@ unsigned jacc_hash_table_enter(jacc_sym_list_t *list, jacc_sym_t *sym, int rep) 
     }
 
     jacc_sym_t *prev_entry = NULL;
-    while (*cur_entry) {
+    while (*cur_entry != NULL) {
 
         // Check to see if we've found a duplicate symbol
         if (!jacc_cmp_syms(*cur_entry, sym)) {
